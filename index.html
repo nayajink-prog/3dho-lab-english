@@ -147,6 +147,23 @@ a.link{color:var(--accent);font-weight:600;text-decoration:none}
 .lstage .phase{font-size:12px;font-weight:700;color:var(--accent);letter-spacing:.05em}
 details>summary{cursor:pointer}
 #selftest{white-space:pre-wrap;font-size:12px}
+.mission{display:flex;gap:12px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:12px;text-decoration:none;color:inherit;background:var(--surface)}
+.mission .grow{display:grid;gap:1px;flex:1;min-width:0}
+.mission .mk{flex:none;width:26px;height:26px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-weight:700;color:var(--accent-ink)}
+.mission.done{background:var(--good-soft);border-color:transparent}
+.mission.done .mk{background:var(--good);border-color:var(--good)}
+.mission.done b{color:var(--good)}
+.wbtn{font:inherit;min-height:0;padding:0 3px;border:0;border-radius:4px;background:var(--bad-soft);color:var(--bad);text-decoration:underline wavy;text-underline-offset:4px;display:inline;cursor:pointer}
+.badges{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.badge{background:var(--surface);border:1px dashed var(--line);border-radius:14px;padding:14px;display:grid;gap:2px;opacity:.6}
+.badge.on{opacity:1;border-style:solid;border-color:var(--accent);background:var(--accent-soft)}
+.badge .bi{font-size:22px;color:var(--accent);line-height:1}
+.dchat{display:grid;gap:10px}
+.dmsg{max-width:86%;padding:10px 12px;border-radius:14px;display:grid;gap:3px;position:relative;min-width:0}
+.dmsg.them{justify-self:start;background:var(--surface);border:1px solid var(--line);border-bottom-left-radius:4px;padding-right:52px}
+.dmsg.me{justify-self:end;background:var(--accent-soft);border-bottom-right-radius:4px}
+.dmsg .replay{position:absolute;right:8px;top:8px}
+.me-turn{border-color:var(--accent)}
 @media (max-width:420px){.en{font-size:19px}.stage .en{font-size:21px}.stats b{font-size:22px}}
 </style>
 
@@ -159,7 +176,7 @@ details>summary{cursor:pointer}
     <div class="small muted">기록은 이 기기 브라우저에만 저장됩니다.</div>
     <div class="seg" role="group" aria-label="화면 테마"><button type="button" data-th="system">시스템</button><button type="button" data-th="light">라이트</button><button type="button" data-th="dark">다크</button></div>
     <nav id="tabs">
-      <a href="#home">오늘</a><a href="#plan">학습플랜</a><a href="#units">표현 목록</a><a href="#review">복습·오답</a><a href="#listen-today">듣기 모드</a><a href="#sounds">실제 발음 알아듣기</a><a href="#ai">AI 대화</a><a href="#settings">설정·백업</a><a href="#install">홈 화면 추가 · 공유</a>
+      <a href="#home">오늘</a><a href="#plan">학습플랜</a><a href="#units">표현 목록</a><a href="#patterns">패턴 드릴</a><a href="#dialogs">대화 연습</a><a href="#review">복습·오답</a><a href="#listen-today">듣기 모드</a><a href="#sounds">실제 발음 알아듣기</a><a href="#ai">AI 대화</a><a href="#settings">설정·백업</a><a href="#install">홈 화면 추가 · 공유</a>
     </nav>
   </div>
   <div class="scrim" id="scrim"></div>
@@ -754,6 +771,313 @@ UNITS.push(
 ]}
 );
 
+/* 패턴 드릴 24개 · 직접 작성
+   형식: { id, c, p: 패턴, ko: 뜻, tip, s: [[한국어 신호, 영어 문장], ...] } */
+const PATTERNS = [
+{ id: 'P01', c: 'biz', p: 'Could you ___?', ko: '~해 주시겠어요?', tip: '가장 기본적인 정중한 부탁. Can you보다 부드럽습니다.', s: [
+  ["파일 보내 주시겠어요?", "Could you send me the file?"],
+  ["다시 말씀해 주시겠어요?", "Could you say that again?"],
+  ["이것 좀 확인해 주시겠어요?", "Could you check this for me?"],
+  ["회의실 예약해 주시겠어요?", "Could you book a meeting room?"],
+  ["오늘까지 답장 주시겠어요?", "Could you reply by today?"]
+]},
+{ id: 'P02', c: 'biz', p: "I'd like to ___.", ko: '~하고 싶습니다', tip: "I want to보다 정중합니다. I'd = I would.", s: [
+  ["제 소개를 하고 싶습니다.", "I'd like to introduce myself."],
+  ["일정을 확인하고 싶습니다.", "I'd like to confirm the schedule."],
+  ["질문 하나 드리고 싶습니다.", "I'd like to ask a question."],
+  ["다른 방안을 제안하고 싶습니다.", "I'd like to suggest another option."],
+  ["회의를 시작하고 싶습니다.", "I'd like to start the meeting."]
+]},
+{ id: 'P03', c: 'biz', p: 'Would it be possible to ___?', ko: '~하는 것이 가능할까요?', tip: '부담스러운 부탁을 아주 정중하게 할 때.', s: [
+  ["마감을 연장하는 게 가능할까요?", "Would it be possible to extend the deadline?"],
+  ["회의를 옮기는 게 가능할까요?", "Would it be possible to move the meeting?"],
+  ["금요일에 만나는 게 가능할까요?", "Would it be possible to meet on Friday?"],
+  ["샘플을 받아 보는 게 가능할까요?", "Would it be possible to get a sample?"],
+  ["일찍 체크인하는 게 가능할까요?", "Would it be possible to check in early?"]
+]},
+{ id: 'P04', c: 'biz', p: 'I was wondering if you could ___.', ko: '혹시 ~해 주실 수 있을까 해서요', tip: '가장 공손한 부탁 표현 중 하나. 윗사람·거래처에게.', s: [
+  ["혹시 도와주실 수 있을까 해서요.", "I was wondering if you could help me."],
+  ["혹시 자료를 공유해 주실 수 있을까 해서요.", "I was wondering if you could share the data."],
+  ["혹시 일정을 바꿔 주실 수 있을까 해서요.", "I was wondering if you could change the schedule."],
+  ["혹시 제 보고서를 봐 주실 수 있을까 해서요.", "I was wondering if you could review my report."],
+  ["혹시 내일 전화 주실 수 있을까 해서요.", "I was wondering if you could call me tomorrow."]
+]},
+{ id: 'P05', c: 'biz', p: 'Let me ___.', ko: '제가 ~할게요', tip: '내가 먼저 나서서 하겠다고 할 때. 빠르게 말하면 lemme.', s: [
+  ["제가 확인해 볼게요.", "Let me check."],
+  ["제가 알아볼게요.", "Let me look into it."],
+  ["제가 다시 연락드릴게요.", "Let me get back to you."],
+  ["제가 화면을 공유할게요.", "Let me share my screen."],
+  ["제가 설명해 드릴게요.", "Let me explain."]
+]},
+{ id: 'P06', c: 'biz', p: "I'm calling to ___.", ko: '~하려고 전화드렸습니다', tip: '전화 첫마디로 용건을 바로 말할 때.', s: [
+  ["회의를 확인하려고 전화드렸습니다.", "I'm calling to confirm our meeting."],
+  ["주문 건으로 문의하려고 전화드렸습니다.", "I'm calling to ask about my order."],
+  ["예약하려고 전화드렸습니다.", "I'm calling to make a reservation."],
+  ["감사 인사 드리려고 전화드렸습니다.", "I'm calling to say thank you."],
+  ["일정을 바꾸려고 전화드렸습니다.", "I'm calling to change the schedule."]
+]},
+{ id: 'P07', c: 'biz', p: 'Do you mind if I ___?', ko: '제가 ~해도 될까요?', tip: '대답이 No면 "괜찮다(해도 된다)"는 뜻입니다.', s: [
+  ["제가 메모해도 될까요?", "Do you mind if I take notes?"],
+  ["제가 여기 앉아도 될까요?", "Do you mind if I sit here?"],
+  ["제가 녹음해도 될까요?", "Do you mind if I record this?"],
+  ["제가 잠깐 전화 받아도 될까요?", "Do you mind if I take this call?"],
+  ["제가 창문을 열어도 될까요?", "Do you mind if I open the window?"]
+]},
+{ id: 'P08', c: 'biz', p: 'Thank you for ___ing.', ko: '~해 주셔서 감사합니다', tip: 'for 뒤에는 동사+ing.', s: [
+  ["기다려 주셔서 감사합니다.", "Thank you for waiting."],
+  ["와 주셔서 감사합니다.", "Thank you for coming."],
+  ["도와주셔서 감사합니다.", "Thank you for helping me."],
+  ["알려 주셔서 감사합니다.", "Thank you for letting me know."],
+  ["빨리 답해 주셔서 감사합니다.", "Thank you for replying so quickly."]
+]},
+{ id: 'P09', c: 'biz', p: 'Sorry for ___.', ko: '~해서 죄송합니다', tip: 'for 뒤에 명사나 동사+ing.', s: [
+  ["늦어서 죄송합니다.", "Sorry for being late."],
+  ["기다리게 해서 죄송합니다.", "Sorry for the wait."],
+  ["혼란을 드려 죄송합니다.", "Sorry for the confusion."],
+  ["갑자기 연락드려 죄송합니다.", "Sorry for the short notice."],
+  ["끼어들어서 죄송합니다.", "Sorry for interrupting."]
+]},
+{ id: 'P10', c: 'biz', p: "I'll make sure ___.", ko: '꼭 ~하도록 하겠습니다', tip: '책임지고 챙기겠다는 신뢰 표현.', s: [
+  ["꼭 오늘 보내도록 하겠습니다.", "I'll make sure to send it today."],
+  ["다시는 없도록 하겠습니다.", "I'll make sure it doesn't happen again."],
+  ["꼭 팀에 전달하겠습니다.", "I'll make sure the team knows."],
+  ["꼭 제시간에 끝내겠습니다.", "I'll make sure we finish on time."],
+  ["꼭 다시 확인하겠습니다.", "I'll make sure to double-check."]
+]},
+{ id: 'P11', c: 'biz', p: 'Is it okay if ___?', ko: '~해도 괜찮을까요?', tip: 'Do you mind if보다 가볍고 흔합니다.', s: [
+  ["제가 조금 늦어도 괜찮을까요?", "Is it okay if I'm a little late?"],
+  ["내일 보내 드려도 괜찮을까요?", "Is it okay if I send it tomorrow?"],
+  ["동료를 데려가도 괜찮을까요?", "Is it okay if I bring a colleague?"],
+  ["카메라를 꺼도 괜찮을까요?", "Is it okay if I turn off my camera?"],
+  ["한국어로 써도 괜찮을까요?", "Is it okay if I write in Korean?"]
+]},
+{ id: 'P12', c: 'biz', p: 'What do you think about ___?', ko: '~에 대해 어떻게 생각하세요?', tip: '의견을 물을 때. How about보다 진지한 질문.', s: [
+  ["이 계획에 대해 어떻게 생각하세요?", "What do you think about this plan?"],
+  ["새 디자인에 대해 어떻게 생각하세요?", "What do you think about the new design?"],
+  ["가격에 대해 어떻게 생각하세요?", "What do you think about the price?"],
+  ["일정에 대해 어떻게 생각하세요?", "What do you think about the schedule?"],
+  ["제 아이디어에 대해 어떻게 생각하세요?", "What do you think about my idea?"]
+]},
+{ id: 'P13', c: 'biz', p: 'It looks like ___.', ko: '~인 것 같아요', tip: '보이는 상황을 부드럽게 말할 때.', s: [
+  ["비가 올 것 같아요.", "It looks like it's going to rain."],
+  ["시간이 더 필요할 것 같아요.", "It looks like we need more time."],
+  ["시스템이 멈춘 것 같아요.", "It looks like the system is down."],
+  ["다들 오신 것 같아요.", "It looks like everyone is here."],
+  ["숫자가 틀린 것 같아요.", "It looks like the number is wrong."]
+]},
+{ id: 'P14', c: 'biz', p: "I'm not sure if ___.", ko: '~인지 잘 모르겠어요', tip: '확실하지 않을 때 단정하지 않는 말투.', s: [
+  ["제가 참석할 수 있을지 모르겠어요.", "I'm not sure if I can make it."],
+  ["이게 맞는지 모르겠어요.", "I'm not sure if this is right."],
+  ["그분이 사무실에 계신지 모르겠어요.", "I'm not sure if he's in the office."],
+  ["시간이 충분한지 모르겠어요.", "I'm not sure if we have enough time."],
+  ["메일을 받으셨는지 모르겠어요.", "I'm not sure if you got my email."]
+]},
+{ id: 'P15', c: 'biz', p: 'We need to ___ by ___.', ko: '~까지 ~해야 합니다', tip: 'by = ~까지(마감). until은 그때까지 계속.', s: [
+  ["금요일까지 끝내야 합니다.", "We need to finish by Friday."],
+  ["내일까지 결정해야 합니다.", "We need to decide by tomorrow."],
+  ["월말까지 보고해야 합니다.", "We need to report by the end of the month."],
+  ["정오까지 보내야 합니다.", "We need to send it by noon."],
+  ["다음 주까지 계약해야 합니다.", "We need to sign by next week."]
+]},
+{ id: 'P16', c: 'biz', p: 'Have you had a chance to ___?', ko: '혹시 ~해 보셨어요?', tip: '재촉하지 않고 진행 여부를 묻는 정중한 표현.', s: [
+  ["혹시 제 메일 보셨어요?", "Have you had a chance to read my email?"],
+  ["혹시 제안서 검토해 보셨어요?", "Have you had a chance to review the proposal?"],
+  ["혹시 파일 확인해 보셨어요?", "Have you had a chance to check the file?"],
+  ["혹시 팀과 이야기해 보셨어요?", "Have you had a chance to talk to your team?"],
+  ["혹시 일정 생각해 보셨어요?", "Have you had a chance to think about the schedule?"]
+]},
+{ id: 'P17', c: 'life', p: 'Can I get ___?', ko: '~ 주세요 / ~ 받을 수 있을까요?', tip: '미국에서 주문할 때 가장 많이 쓰는 말.', s: [
+  ["물 좀 주세요.", "Can I get some water?"],
+  ["아이스 아메리카노 하나 주세요.", "Can I get an iced americano?"],
+  ["계산서 주세요.", "Can I get the check?"],
+  ["포장 용기 주세요.", "Can I get a to-go box?"],
+  ["영수증 주세요.", "Can I get a receipt?"]
+]},
+{ id: 'P18', c: 'life', p: 'Is there a ___ near here?', ko: '근처에 ~ 있나요?', tip: 'around here로 바꿔도 됩니다.', s: [
+  ["근처에 약국 있나요?", "Is there a pharmacy near here?"],
+  ["근처에 지하철역 있나요?", "Is there a subway station near here?"],
+  ["근처에 편의점 있나요?", "Is there a convenience store near here?"],
+  ["근처에 현금인출기 있나요?", "Is there an ATM near here?"],
+  ["근처에 좋은 식당 있나요?", "Is there a good restaurant near here?"]
+]},
+{ id: 'P19', c: 'life', p: 'How do I get to ___?', ko: '~에 어떻게 가나요?', tip: '길을 물을 때 기본 문장.', s: [
+  ["공항에 어떻게 가나요?", "How do I get to the airport?"],
+  ["시내에 어떻게 가나요?", "How do I get to downtown?"],
+  ["이 호텔에 어떻게 가나요?", "How do I get to this hotel?"],
+  ["박물관에 어떻게 가나요?", "How do I get to the museum?"],
+  ["3번 게이트에 어떻게 가나요?", "How do I get to gate three?"]
+]},
+{ id: 'P20', c: 'life', p: "I'm looking for ___.", ko: '~을 찾고 있어요', tip: '가게에서 물건, 길에서 장소를 찾을 때.', s: [
+  ["화장실을 찾고 있어요.", "I'm looking for the restroom."],
+  ["선물을 찾고 있어요.", "I'm looking for a gift."],
+  ["출구를 찾고 있어요.", "I'm looking for the exit."],
+  ["제 가방을 찾고 있어요.", "I'm looking for my bag."],
+  ["버스 정류장을 찾고 있어요.", "I'm looking for the bus stop."]
+]},
+{ id: 'P21', c: 'life', p: 'Do you have ___?', ko: '~ 있나요?', tip: '물건·자리·사이즈를 물을 때.', s: [
+  ["이거 더 작은 사이즈 있나요?", "Do you have this in a smaller size?"],
+  ["두 명 자리 있나요?", "Do you have a table for two?"],
+  ["와이파이 있나요?", "Do you have Wi-Fi?"],
+  ["채식 메뉴 있나요?", "Do you have a vegetarian menu?"],
+  ["오늘 밤 빈방 있나요?", "Do you have a room for tonight?"]
+]},
+{ id: 'P22', c: 'life', p: 'Where can I ___?', ko: '어디서 ~할 수 있나요?', tip: '장소를 묻는 만능 패턴.', s: [
+  ["어디서 표를 살 수 있나요?", "Where can I buy a ticket?"],
+  ["어디서 택시를 탈 수 있나요?", "Where can I get a taxi?"],
+  ["어디서 환전할 수 있나요?", "Where can I exchange money?"],
+  ["어디서 짐을 찾을 수 있나요?", "Where can I pick up my bag?"],
+  ["어디서 휴대폰을 충전할 수 있나요?", "Where can I charge my phone?"]
+]},
+{ id: 'P23', c: 'life', p: "I'm here ___.", ko: '~하러 왔어요', tip: 'to+동사 또는 for+명사.', s: [
+  ["출장으로 왔어요.", "I'm here on business."],
+  ["관광하러 왔어요.", "I'm here for sightseeing."],
+  ["회의 때문에 왔어요.", "I'm here for a meeting."],
+  ["브라운 씨를 만나러 왔어요.", "I'm here to see Ms. Brown."],
+  ["체크인하러 왔어요.", "I'm here to check in."]
+]},
+{ id: 'P24', c: 'life', p: 'What time does ___?', ko: '~는 몇 시에 하나요?', tip: '시간표·영업시간을 물을 때.', s: [
+  ["가게는 몇 시에 닫나요?", "What time does the store close?"],
+  ["다음 버스는 몇 시에 오나요?", "What time does the next bus come?"],
+  ["조식은 몇 시에 시작하나요?", "What time does breakfast start?"],
+  ["비행기는 몇 시에 떠나나요?", "What time does the flight leave?"],
+  ["투어는 몇 시에 끝나나요?", "What time does the tour end?"]
+]}
+];
+
+/* 대본 대화 16개 · 직접 작성
+   A = 앱이 읽어 주는 상대 대사, B = 내가 말할 대사
+   형식: { id, c, t, d, who: 상대 역할, l: [['A'|'B', 영어, 한국어], ...] } */
+const DIALOGS = [
+{ id: 'D01', c: 'biz', t: '월요일 아침 인사', d: '사무실에서 동료와', who: '동료 Sarah', l: [
+  ['A', "Morning! How was your weekend?", "좋은 아침! 주말 어땠어요?"],
+  ['B', "It was great, thanks. I went hiking with my family.", "좋았어요, 고마워요. 가족이랑 등산 갔어요."],
+  ['A', "Oh, nice. Where did you go?", "오, 좋네요. 어디로 갔어요?"],
+  ['B', "We went to a mountain near Seoul. How about you?", "서울 근처 산에 갔어요. 당신은요?"],
+  ['A', "I just stayed home and relaxed.", "저는 그냥 집에서 쉬었어요."],
+  ['B', "Sounds nice. Let's grab coffee later.", "좋네요. 이따 커피 한잔해요."]
+]},
+{ id: 'D02', c: 'biz', t: '화상회의 시작', d: '내가 진행하는 회의', who: '참석자 Tom', l: [
+  ['A', "Hi, can you hear me okay?", "안녕하세요, 제 목소리 잘 들리세요?"],
+  ['B', "Yes, I can hear you clearly. Thanks for joining.", "네, 잘 들립니다. 참석해 주셔서 감사합니다."],
+  ['A', "No problem. Are we waiting for anyone else?", "별말씀을요. 다른 분 기다리나요?"],
+  ['B', "Mina is running a little late. Let's get started.", "미나 씨가 조금 늦어요. 시작하시죠."],
+  ['A', "Sounds good. What's on the agenda today?", "좋아요. 오늘 안건이 뭔가요?"],
+  ['B', "We have two items: the budget and the schedule.", "두 가지입니다. 예산과 일정이요."]
+]},
+{ id: 'D03', c: 'biz', t: '미팅 날짜 잡기', d: '거래처와 메일 대신 통화로', who: '거래처 David', l: [
+  ['A', "We'd like to meet with you next week.", "다음 주에 한번 만나 뵙고 싶습니다."],
+  ['B', "Sure. When would be a good time for you?", "좋습니다. 언제가 편하세요?"],
+  ['A', "How about Tuesday afternoon?", "화요일 오후 어떠세요?"],
+  ['B', "I'm afraid I have another meeting. Could we do Wednesday instead?", "죄송하지만 다른 회의가 있어요. 대신 수요일 가능할까요?"],
+  ['A', "Wednesday works. Two o'clock?", "수요일 좋아요. 2시요?"],
+  ['B', "Perfect. I'll send you a calendar invite.", "좋습니다. 일정 초대 보내 드릴게요."]
+]},
+{ id: 'D04', c: 'biz', t: '전화로 메시지 남기기', d: '담당자가 자리에 없을 때', who: '안내 직원', l: [
+  ['A', "Good morning, Blue River Company. How can I help you?", "안녕하세요, 블루리버 컴퍼니입니다. 무엇을 도와드릴까요?"],
+  ['B', "Hi, this is Min from Hanbit. Could I speak to Ms. Brown?", "안녕하세요, 한빛의 민입니다. 브라운 씨와 통화할 수 있을까요?"],
+  ['A', "I'm sorry, she's in a meeting right now.", "죄송하지만 지금 회의 중이세요."],
+  ['B', "I see. Could you ask her to call me back?", "그렇군요. 다시 전화해 달라고 전해 주시겠어요?"],
+  ['A', "Of course. What's your number?", "물론이죠. 번호가 어떻게 되세요?"],
+  ['B', "It's 010 1234 5678. Thank you for your help.", "010 1234 5678입니다. 도와주셔서 감사합니다."]
+]},
+{ id: 'D05', c: 'biz', t: '마감 연장 부탁', d: '상사에게 정중하게', who: '팀장 Lisa', l: [
+  ['A', "How's the report coming along?", "보고서 어떻게 돼 가요?"],
+  ['B', "It's almost done, but I need a little more time.", "거의 다 됐는데 시간이 조금 더 필요합니다."],
+  ['A', "What's the problem?", "무슨 문제가 있어요?"],
+  ['B', "We're still waiting for the sales numbers.", "아직 영업 수치를 기다리고 있습니다."],
+  ['A', "I see. When can you finish it?", "그렇군요. 언제 끝낼 수 있어요?"],
+  ['B', "Would it be possible to send it on Monday morning?", "월요일 오전에 보내 드려도 될까요?"]
+]},
+{ id: 'D06', c: 'biz', t: '프로젝트 진행 보고', d: '주간 회의에서', who: '본사 매니저 Kevin', l: [
+  ['A', "Can you give us a quick update on the project?", "프로젝트 진행 상황 간단히 말해 줄래요?"],
+  ['B', "Sure. We're on track, and about seventy percent is done.", "네. 순조롭고 약 70퍼센트 끝났습니다."],
+  ['A', "Great. Any issues so far?", "좋네요. 지금까지 문제는요?"],
+  ['B', "One supplier is a little late, but we're looking into it.", "공급사 한 곳이 조금 늦지만 확인하고 있습니다."],
+  ['A', "Okay. Keep me posted.", "알겠어요. 계속 알려 줘요."],
+  ['B', "I will. I'll send you an update on Friday.", "네. 금요일에 업데이트 보내 드리겠습니다."]
+]},
+{ id: 'D07', c: 'biz', t: '견적 문의', d: '공급사에 가격을 물을 때', who: '공급사 영업 Amy', l: [
+  ['A', "Thanks for your interest in our product.", "저희 제품에 관심 가져 주셔서 감사합니다."],
+  ['B', "Could you send us a price quote for five hundred units?", "500개 기준 견적서를 보내 주시겠어요?"],
+  ['A', "Of course. When do you need them?", "물론이죠. 언제 필요하세요?"],
+  ['B', "By the end of next month. Does the price include shipping?", "다음 달 말까지요. 가격에 배송비가 포함되나요?"],
+  ['A', "Shipping is extra, but we can offer a discount.", "배송비는 별도지만 할인을 해 드릴 수 있어요."],
+  ['B', "That sounds good. I look forward to your quote.", "좋습니다. 견적 기다리겠습니다."]
+]},
+{ id: 'D08', c: 'biz', t: '방문객 맞이', d: '거래처가 회사에 왔을 때', who: '방문객 Mr. Lee', l: [
+  ['A', "Hi, I'm here to see Min.", "안녕하세요, 민 씨를 만나러 왔습니다."],
+  ['B', "Welcome! I'm Min. Nice to meet you in person.", "어서 오세요! 제가 민입니다. 직접 뵙게 되어 반갑습니다."],
+  ['A', "Nice to meet you too. Your office is beautiful.", "저도 반갑습니다. 사무실이 멋지네요."],
+  ['B', "Thank you. Did you find us easily?", "감사합니다. 찾아오시는 데 어렵지 않으셨어요?"],
+  ['A', "Yes, the directions were very clear.", "네, 안내가 아주 명확했어요."],
+  ['B', "Great. Can I get you something to drink?", "다행이네요. 마실 것 좀 드릴까요?"]
+]},
+{ id: 'D09', c: 'biz', t: '실수 사과하기', d: '잘못된 파일을 보냈을 때', who: '거래처 Emma', l: [
+  ['A', "Hi, I think you sent me the wrong file.", "안녕하세요, 파일을 잘못 보내신 것 같아요."],
+  ['B', "Oh, I'm so sorry. That was my mistake.", "아, 정말 죄송합니다. 제 실수였습니다."],
+  ['A', "No worries. Could you send the right one?", "괜찮아요. 맞는 파일 보내 주실 수 있어요?"],
+  ['B', "Of course. I'll send it right away.", "물론이죠. 바로 보내 드리겠습니다."],
+  ['A', "Thanks. I need it before the meeting.", "고마워요. 회의 전에 필요해서요."],
+  ['B', "I'll make sure you get it in five minutes.", "5분 안에 꼭 받으시도록 하겠습니다."]
+]},
+{ id: 'D10', c: 'biz', t: '휴가 알리기', d: '팀원에게 부재를 알릴 때', who: '동료 Jake', l: [
+  ['A', "Are you going anywhere for the holidays?", "연휴에 어디 가요?"],
+  ['B', "Yes, I'll be on vacation from Monday to Wednesday.", "네, 월요일부터 수요일까지 휴가예요."],
+  ['A', "Nice! Who should I contact while you're away?", "좋네요! 없는 동안 누구한테 연락하면 돼요?"],
+  ['B', "Please contact Mina. She's covering for me.", "미나 씨에게 연락해 주세요. 제 일을 맡아 줄 거예요."],
+  ['A', "Got it. Enjoy your time off.", "알겠어요. 잘 쉬다 와요."],
+  ['B', "Thanks. I'll be back on Thursday.", "고마워요. 목요일에 돌아와요."]
+]},
+{ id: 'D11', c: 'life', t: '호텔 체크인', d: '프런트에서', who: '호텔 직원', l: [
+  ['A', "Hi there. Checking in?", "안녕하세요. 체크인하시나요?"],
+  ['B', "Yes. I have a reservation under the name Kim.", "네. 김이라는 이름으로 예약했어요."],
+  ['A', "Got it. Can I see your ID, please?", "확인했습니다. 신분증 좀 보여 주시겠어요?"],
+  ['B', "Here is my passport. Is breakfast included?", "여기 여권이요. 조식 포함인가요?"],
+  ['A', "Yes, it's from seven to ten on the second floor.", "네, 2층에서 7시부터 10시까지예요."],
+  ['B', "Great. What's the Wi-Fi password?", "좋네요. 와이파이 비밀번호가 뭔가요?"]
+]},
+{ id: 'D12', c: 'life', t: '카페 주문', d: '커피 한 잔 주문하기', who: '바리스타', l: [
+  ['A', "Hi! What can I get for you?", "안녕하세요! 뭐 드릴까요?"],
+  ['B', "Can I get a medium iced latte, please?", "아이스 라떼 미디엄 하나 주세요."],
+  ['A', "Sure. For here or to go?", "네. 드시고 가세요, 가져가세요?"],
+  ['B', "To go, please.", "가져갈게요."],
+  ['A', "Anything else?", "더 필요한 건요?"],
+  ['B', "That's it. Can I pay by card?", "그거면 돼요. 카드로 계산할 수 있나요?"]
+]},
+{ id: 'D13', c: 'life', t: '식당에서 주문', d: '메뉴 고르고 주문하기', who: '서버', l: [
+  ['A', "Are you ready to order?", "주문하시겠어요?"],
+  ['B', "Yes. What do you recommend?", "네. 추천해 주실 메뉴가 있나요?"],
+  ['A', "The steak is really popular.", "스테이크가 아주 인기 많아요."],
+  ['B', "I'll have the steak, medium, please.", "스테이크 미디엄으로 주세요."],
+  ['A', "Great choice. Anything to drink?", "좋은 선택이에요. 음료는요?"],
+  ['B', "Just water, please. Thank you.", "물이면 돼요. 감사합니다."]
+]},
+{ id: 'D14', c: 'life', t: '길 묻기', d: '지나가는 사람에게', who: '현지인', l: [
+  ['B', "Excuse me, how do I get to the museum?", "실례합니다, 박물관에 어떻게 가나요?"],
+  ['A', "Go straight two blocks and turn left.", "두 블록 직진해서 왼쪽으로 도세요."],
+  ['B', "Is it within walking distance?", "걸어갈 수 있는 거리인가요?"],
+  ['A', "Yeah, it's like a ten-minute walk.", "네, 걸어서 10분쯤이에요."],
+  ['B', "Thank you so much.", "정말 감사합니다."],
+  ['A', "No problem. Enjoy the museum!", "천만에요. 박물관 구경 잘하세요!"]
+]},
+{ id: 'D15', c: 'life', t: '옷 교환하기', d: '사이즈가 안 맞을 때', who: '매장 직원', l: [
+  ['A', "Hi, how can I help you?", "안녕하세요, 무엇을 도와드릴까요?"],
+  ['B', "I bought this yesterday, but it doesn't fit.", "어제 샀는데 사이즈가 안 맞아요."],
+  ['A', "I'm sorry. Would you like a refund or an exchange?", "죄송합니다. 환불을 원하세요, 교환을 원하세요?"],
+  ['B', "Could I exchange it for a larger size?", "더 큰 사이즈로 교환할 수 있을까요?"],
+  ['A', "Sure. Do you have the receipt?", "그럼요. 영수증 있으세요?"],
+  ['B', "Yes, here it is.", "네, 여기 있어요."]
+]},
+{ id: 'D16', c: 'life', t: '공항 체크인', d: '항공사 카운터에서', who: '항공사 직원', l: [
+  ['A', "Hello. Where are you flying to today?", "안녕하세요. 오늘 어디로 가시나요?"],
+  ['B', "I'm flying to Los Angeles. Here is my passport.", "로스앤젤레스로 가요. 여기 여권이요."],
+  ['A', "Thank you. Do you have any bags to check?", "감사합니다. 부칠 짐 있으세요?"],
+  ['B', "Just one bag. Could I have a window seat?", "가방 하나요. 창가 자리로 주실 수 있나요?"],
+  ['A', "Sure. Here's your boarding pass. Gate twelve.", "네. 탑승권 여기 있습니다. 12번 게이트예요."],
+  ['B', "Thank you. What time does boarding start?", "감사합니다. 탑승은 몇 시에 시작하나요?"]
+]}
+];
+
 </script>
 <script>
 /* ===== 3Dho LAB English · 앱 코드 ===== */
@@ -809,13 +1133,18 @@ function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { co
 const SENT = {};          /* sid → 문장 */
 UNITS.forEach(u => u.s.forEach((x, i) => { const sid = u.id + '-' + (i + 1); SENT[sid] = { sid, unit: u, en: x[0], ko: x[1], alt: x[2] || '', note: x[3] || '' }; }));
 const UNIT = Object.fromEntries(UNITS.map(u => [u.id, u]));
+const UNIT_SIDS = Object.keys(SENT);
+/* 패턴 드릴·대본 대화 문장도 복습 대상으로 등록 */
+const PSET = Object.fromEntries(PATTERNS.map(p => [p.id, p])), DSET = Object.fromEntries(DIALOGS.map(d => [d.id, d]));
+PATTERNS.forEach(p => { const u = { id: p.id, t: p.p, c: p.c, kind: 'pattern' }; p.s.forEach((x, i) => { const sid = p.id + '-' + (i + 1); SENT[sid] = { sid, unit: u, en: x[1], ko: x[0], alt: '', note: p.tip }; }); });
+DIALOGS.forEach(d => { const u = { id: d.id, t: d.t, c: d.c, kind: 'dialog' }; d.l.forEach((x, i) => { if (x[0] === 'B') { const sid = d.id + '-' + (i + 1); SENT[sid] = { sid, unit: u, en: x[1], ko: x[2], alt: '', note: '' }; } }); });
 const ALLSID = Object.keys(SENT);
 /* 학습 순서: 업무 2개 + 일상 1개씩 번갈아 */
 const ORDER = (() => { const b = UNITS.filter(u => u.c === 'biz'), l = UNITS.filter(u => u.c === 'life'), o = []; while (b.length || l.length) { if (b.length) o.push(b.shift()); if (b.length) o.push(b.shift()); if (l.length) o.push(l.shift()); } return o; })();
 
 /* ===== 상태·저장 (localStorage 키는 모두 eng- 접두어) ===== */
 const LS = 'eng-v1';
-function blank() { return { v: 1, updated: 0, start: today(), planLen: 90, items: {}, wrong: {}, planDone: {}, daily: {}, set: { rate: 0.9, voice: '', pause: 1.5, koVoice: true, altPlay: true, reps: 1, target: 'en' } }; }
+function blank() { return { v: 1, updated: 0, start: today(), planLen: 90, items: {}, wrong: {}, planDone: {}, daily: {}, log: {}, patDone: {}, dlgDone: {}, set: { rate: 0.9, voice: '', pause: 1.5, koVoice: true, altPlay: true, reps: 1, target: 'en' } }; }
 let S = blank();
 try { const raw = localStorage.getItem(LS); if (raw) { const o = JSON.parse(raw); S = Object.assign(blank(), o); S.set = Object.assign(blank().set, o.set || {}); } } catch (e) { }
 function persist() { S.updated = Date.now(); try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e) { } }
@@ -829,8 +1158,10 @@ function makePlan(len = S.planLen) {
     const date = addDays(S.start, i);
     if ((i + 1) % reviewEvery === 0) { days.push({ i, date, type: 'review', units: [] }); continue; }
     const a = Math.floor(li * ORDER.length / learnN), b = Math.floor((li + 1) * ORDER.length / learnN);
-    days.push({ i, date, type: 'learn', units: ORDER.slice(a, b).map(u => u.id) }); li++;
+    days.push({ i, date, type: 'learn', units: ORDER.slice(a, b).map(u => u.id), pat: PATTERNS[Math.floor(li * PATTERNS.length / learnN)].id, dlg: DIALOGS[Math.floor(li * DIALOGS.length / learnN)].id }); li++;
   }
+  /* 복습일에는 직전 학습일의 패턴·대화를 다시 */
+  days.forEach((d, i) => { if (d.type === 'review') { const prev = days.slice(0, i).reverse().find(x => x.type === 'learn') || days.find(x => x.type === 'learn'); d.pat = prev.pat; d.dlg = prev.dlg; } });
   /* 복습일: 직전 4일 동안 배운 상황 */
   days.forEach((d, i) => { if (d.type === 'review') d.units = days.slice(Math.max(0, i - 4), i).flatMap(x => x.type === 'learn' ? x.units : []); });
   return days;
@@ -860,6 +1191,8 @@ function streak() { let n = 0, d = today(); if (!S.daily[d]) d = addDays(d, -1);
 /* 세트 키 → 문장 목록: 상황 ID(B01) · day12 · today · due · wrong · all-biz 등 */
 function itemsFor(key) {
   if (UNIT[key]) return UNIT[key].s.map((_, i) => SENT[key + '-' + (i + 1)]);
+  if (PSET[key]) return PSET[key].s.map((_, i) => SENT[key + '-' + (i + 1)]);
+  if (DSET[key]) return DSET[key].l.map((x, i) => SENT[key + '-' + (i + 1)]).filter(Boolean);
   if (key === 'today') key = 'day' + (dayIndex() + 1);
   const m = /^day(\d+)$/.exec(key);
   if (m) { const d = planDay(+m[1] - 1); return d.units.flatMap(id => itemsFor(id)); }
@@ -869,6 +1202,8 @@ function itemsFor(key) {
 }
 function setTitle(key) {
   if (UNIT[key]) return `${key} ${UNIT[key].t}`;
+  if (PSET[key]) return `패턴 ${PSET[key].p}`;
+  if (DSET[key]) return `대화 ${DSET[key].t}`;
   if (key === 'today') return `오늘 (Day ${dayIndex() + 1})`;
   const m = /^day(\d+)$/.exec(key); if (m) return `Day ${m[1]}`;
   return { due: '오늘 복습', wrong: '오답 복습' }[key] || key;
@@ -962,7 +1297,7 @@ function scoreClass(n) { return n >= 80 ? 'good' : n >= 60 ? 'warn' : 'bad'; }
 function scoreWord(n) { return n >= 90 ? '완벽해요' : n >= 80 ? '좋아요' : n >= 60 ? '거의 됐어요' : '다시 해 봐요'; }
 
 /* ===== 라우팅 ===== */
-const ROUTES = { home: viewHome, plan: viewPlan, units: viewUnits, unit: viewUnit, shadow: viewShadow, answer: viewAnswer, listen: viewListen, review: viewReview, sounds: viewSounds, ai: viewAI, settings: viewSettings, install: viewInstall };
+const ROUTES = { home: viewHome, plan: viewPlan, units: viewUnits, unit: viewUnit, shadow: viewShadow, answer: viewAnswer, listen: viewListen, review: viewReview, sounds: viewSounds, ai: viewAI, settings: viewSettings, install: viewInstall, lesson: viewLesson, patterns: viewPatterns, pattern: viewPattern, dialogs: viewDialogs, dialog: viewDialog, badges: viewBadges };
 function go(h) { if (location.hash !== '#' + h) location.hash = h; else render(); }
 function parseHash() { const h = (location.hash || '#home').slice(1); const i = h.indexOf('-'); return i < 0 ? [h, ''] : [h.slice(0, i), h.slice(i + 1)]; }
 let cleanup = null;
@@ -970,7 +1305,7 @@ function render() {
   if (cleanup) { try { cleanup(); } catch (e) { } cleanup = null; }
   stopSpeak(); if (activeRec) { try { activeRec.abort(); } catch (e) { } }
   const [r0, arg] = parseHash(); const r = ROUTES[r0] ? r0 : 'home';
-  const navKey = r === 'listen' ? '#listen-today' : r === 'unit' || r === 'shadow' || r === 'answer' ? '#units' : '#' + r;
+  const navKey = r === 'listen' ? '#listen-today' : r === 'unit' || r === 'shadow' || r === 'answer' ? '#units' : r === 'pattern' ? '#patterns' : r === 'dialog' ? '#dialogs' : r === 'lesson' || r === 'badges' ? '#home' : '#' + r;
   document.querySelectorAll('#tabs a').forEach(a => { if (a.getAttribute('href') === navKey) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
   const di = dayIndex(); $('#dayBadge').textContent = di < 0 ? `D-${-di}` : di < PLAN.length ? `Day ${di + 1}/${PLAN.length}` : '플랜 완료';
   menu(false);
@@ -992,14 +1327,22 @@ function viewHome(v) {
   if (di < 0) p.innerHTML = `<h3>플랜은 ${esc(S.start)}에 시작합니다</h3><p class="small muted">먼저 아래 표현 목록에서 둘러보거나, 학습플랜에서 시작일을 오늘로 바꾸세요.</p>`;
   else {
     const set = 'day' + (d.i + 1), done = S.planDone[d.i];
-    p.innerHTML = `<div class="row"><span class="pill ${d.type === 'review' ? 'warn' : 'info'}">Day ${d.i + 1} · ${d.type === 'review' ? '복습일' : '새 표현'}</span>${done ? '<span class="pill good">완료</span>' : ''}${di >= PLAN.length ? '<span class="pill good">플랜 끝 · 마지막 날 반복</span>' : ''}</div>
-    <h3>${esc(dayTitle(d))}</h3>
-    <p class="small muted">하루 30분 권장: ① 문장 듣고 따라 말하기 10분 → ② 한국어 보고 말로 답하기 10분 → ③ 복습 10분. 출퇴근길에는 듣기 모드.</p>`;
-    const r = el('div', 'tiles');
-    [['shadow-' + set, '① 듣고 따라 말하기', '들은 문장을 그대로'], ['answer-' + set, '② 말로 답하기', '한국어 → 영어로'], ['listen-' + set, '듣기 모드', '영어 → 쉼 → 뜻 자동'], ['unit-' + set, '문장 보기', '정중한 말 · 실제 말']].forEach(([h, b, s]) => { const a = el('a', 'tile'); a.href = '#' + h; a.innerHTML = `<b>${b}</b><span>${s}</span>`; r.append(a); });
-    p.append(r);
-    const dn = btn(done ? '완료 취소' : '오늘 학습 완료 표시', done ? 'ghost' : '', () => { if (done) delete S.planDone[d.i]; else S.planDone[d.i] = today(); persist(); render(); });
-    p.append(dn);
+    const lg = S.log[today()] || {}, ms = [lg.lesson, lg.pat, lg.dlg], nDone = ms.filter(Boolean).length;
+    p.innerHTML = `<div class="row"><span class="pill ${d.type === 'review' ? 'warn' : 'info'}">Day ${d.i + 1} · ${d.type === 'review' ? '복습일' : '새 표현'}</span>${done ? '<span class="pill good">완료</span>' : ''}${di >= PLAN.length ? '<span class="pill good">플랜 끝 · 마지막 날 반복</span>' : ''}<span class="small muted" style="margin-left:auto">오늘의 미션 <b class="num">${nDone}/3</b></span></div>
+    <h3>${esc(dayTitle(d))}</h3><div class="bar"><i style="width:${Math.round(nDone / 3 * 100)}%"></i></div>`;
+    const pt = PSET[d.pat], dl = DSET[d.dlg];
+    [[lg.lesson, '① 오늘 레슨', d.type === 'review' ? '복습일: 혼자 말하기로 점검' : '듣고 따라 → 빈칸 → 혼자 말하기 3단계', 'lesson-' + set, '약 15분'],
+     [lg.pat, '② 패턴 드릴', pt.p + ' · ' + pt.ko, 'pattern-' + pt.id, '약 5분'],
+     [lg.dlg, '③ 대화 연습', dl.t + ' · ' + dl.who + '와 대화', 'dialog-' + dl.id, '약 5분']].forEach(([ok, t, s, h, min]) => {
+      const a = el('a', 'mission' + (ok ? ' done' : '')); a.href = '#' + h;
+      a.innerHTML = `<span class="mk">${ok ? '✓' : ''}</span><span class="grow"><b>${t}</b><span class="small muted">${esc(s)}</span></span><span class="small muted">${ok ? '완료' : min}</span>`;
+      p.append(a);
+    });
+    const more = el('div', 'row');
+    [['listen-' + set, '듣기 모드'], ['unit-' + set, '문장 보기'], ['shadow-' + set, '따라 말하기만'], ['answer-' + set, '말로 답하기만']].forEach(([h, b]) => more.append(btn(b, 'sm', () => go(h))));
+    p.append(more);
+    const dn = btn(done ? '완료 취소' : '오늘 학습 완료 표시', done ? 'ghost sm' : 'sm', () => { if (done) delete S.planDone[d.i]; else S.planDone[d.i] = today(); persist(); render(); });
+    p.append(el('p', 'small muted', '미션 3개를 모두 끝내면 오늘 플랜이 자동으로 완료됩니다. 출퇴근길에는 듣기 모드를 쓰세요.')); p.append(dn);
   }
   v.append(p);
   const rv = el('section', 'panel');
@@ -1009,7 +1352,7 @@ function viewHome(v) {
   rr.querySelectorAll('button').forEach((b, i) => { if ((i < 2 && !due) || (i === 2 && !wr)) b.disabled = true; });
   rv.append(rr); v.append(rv);
   const more = el('div', 'tiles');
-  [['plan', '학습플랜', `${S.planLen}일 · 날짜별 바로가기`], ['units', '표현 목록', `${UNITS.length}개 상황 · ${ALLSID.length}문장`], ['sounds', '실제 발음 알아듣기', 'gonna · wanna · lemme'], ['ai', 'AI 대화', '롤플레이 연습']].forEach(([h, b, s]) => { const a = el('a', 'tile'); a.href = '#' + h; a.innerHTML = `<b>${b}</b><span>${s}</span>`; more.append(a); });
+  [['badges', '배지', `${badges().filter(b => b.ok).length} / ${badges().length}개 획득`], ['plan', '학습플랜', `${S.planLen}일 · 날짜별 바로가기`], ['units', '표현 목록', `${UNITS.length}개 상황 · ${UNIT_SIDS.length}문장`], ['patterns', '패턴 드릴', `${PATTERNS.length}개 패턴`], ['dialogs', '대화 연습', `${DIALOGS.length}개 대본`], ['sounds', '실제 발음', 'gonna · wanna · lemme'], ['ai', 'AI 대화', '자유 롤플레이'], ['review', '복습·오답', '간격 반복']].forEach(([h, b, s]) => { const a = el('a', 'tile'); a.href = '#' + h; a.innerHTML = `<b>${b}</b><span>${s}</span>`; more.append(a); });
   v.append(more);
   if (!SR) v.append(el('p', 'small muted', '이 브라우저는 음성 인식이 없어서, 말하기 연습 때 입력칸의 키보드 마이크(받아쓰기)를 씁니다.'));
 }
@@ -1102,7 +1445,8 @@ function viewShadow(v, key) {
     p.append(speakInput(said => {
       const r = bestOf([text], said, similarity);
       grade(s.sid, r.score);
-      res.innerHTML = `<div class="row"><span class="score ${scoreClass(r.score)}">${r.score}</span><b>${scoreWord(r.score)}</b></div><div class="diff">${r.refWords.map((w, i) => `<span class="${r.hit[i] ? 'ok' : 'miss'}">${esc(w)}</span>`).join(' ')}</div><div class="heard">들린 말: “${esc(r.said)}”</div>${r.score < 80 ? '<p class="small muted">빨간 밑줄 단어가 안 들렸습니다. 🐢로 천천히 듣고 다시 해 보세요.</p>' : ''}`;
+      res.innerHTML = `<div class="row"><span class="score ${scoreClass(r.score)}">${r.score}</span><b>${scoreWord(r.score)}</b></div><div class="diff">${diffHTML(r.refWords, r.hit)}</div><div class="heard">들린 말: “${esc(r.said)}”</div>${r.score < 80 ? '<p class="small muted">빨간 단어를 누르면 그 단어만 천천히 들려줍니다.</p>' : ''}`;
+      const mb = missedBtn(r.refWords, r.hit, text); if (mb) res.append(mb);
       if (r.score >= 80) { stage.classList.remove('hide'); }
     }));
     p.append(res);
@@ -1144,7 +1488,7 @@ function viewAnswer(v, key) {
       const r = bestOf([s.en, s.alt], said, keyScore);
       const sc = Math.max(0, r.score - (hint ? 10 : 0) - (shown ? 30 : 0));
       grade(s.sid, sc);
-      res.innerHTML = `<div class="row"><span class="score ${scoreClass(sc)}">${sc}</span><b>${scoreWord(sc)}</b>${hint || shown ? `<span class="small muted">${hint ? '힌트 −10' : ''} ${shown ? '정답 보고 −30' : ''}</span>` : ''}</div><div class="small">핵심 단어: <span class="diff" style="font-size:16px">${r.keys.map((w, i) => `<span class="${r.hit[i] ? 'ok' : 'miss'}">${esc(w)}</span>`).join(' · ')}</span></div><div class="heard">들린 말: “${esc(r.said)}”</div>`;
+      res.innerHTML = `<div class="row"><span class="score ${scoreClass(sc)}">${sc}</span><b>${scoreWord(sc)}</b>${hint || shown ? `<span class="small muted">${hint ? '힌트 −10' : ''} ${shown ? '정답 보고 −30' : ''}</span>` : ''}</div><div class="small">핵심 단어: <span class="diff" style="font-size:16px">${diffHTML(r.keys, r.hit)}</span></div><div class="heard">들린 말: “${esc(r.said)}”</div>`;
       if (!shown) showAns();
     }));
     p.append(res);
@@ -1161,7 +1505,7 @@ let wakeLock = null;
 async function keepAwake(on) { try { if (on && 'wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); else if (!on && wakeLock) { await wakeLock.release(); wakeLock = null; } } catch (e) { } }
 function viewListen(v, key) {
   if (!key) key = 'today';
-  const items = itemsFor(key);
+  const items = DSET[key] ? DSET[key].l.map(x => ({ en: x[1], ko: x[2], alt: '' })) : itemsFor(key);
   head(v, '듣기 모드 · ' + setTitle(key), '영어 → 쉼(따라 말하기) → 한국어 뜻 → 실제 미국식 표현 순서로 자동 재생합니다.');
   const warn = el('div', 'callout', '아이폰은 화면이 꺼지면 읽기가 멈춥니다. 재생 중에는 화면 꺼짐을 막도록 요청하지만, 안 되면 설정 → 디스플레이 및 밝기 → 자동 잠금 시간을 늘려 주세요.');
   v.append(warn);
@@ -1206,6 +1550,217 @@ function viewListen(v, key) {
   v.append(go2);
 }
 
+/* ===== 미션 기록·배지 ===== */
+function logMission(k) { const d = today(), x = S.log[d] || (S.log[d] = {}); x[k] = 1; const di = dayIndex(); if (x.lesson && x.pat && x.dlg && di >= 0 && di < PLAN.length && !S.planDone[di]) S.planDone[di] = d; persist(); }
+function totalSaid() { return Object.values(S.daily).reduce((a, x) => a + (x.n || 0), 0); }
+function bestStreak() { let best = 0, run = 0, prev = null; Object.keys(S.daily).sort().forEach(d => { run = prev && addDays(prev, 1) === d ? run + 1 : 1; best = Math.max(best, run); prev = d; }); return best; }
+function badges() {
+  const st = Math.max(streak(), bestStreak()), said = totalSaid(), pats = Object.keys(S.patDone).length, dls = Object.keys(S.dlgDone).length, plan = Object.keys(S.planDone).length;
+  const mastered = Object.values(S.items).filter(x => x.b >= 3).length, perfect = Object.values(S.items).filter(x => x.best >= 100).length;
+  return [
+    ['첫 마디', '처음으로 영어 문장 말하기', said >= 1], ['3일 연속', '3일 연속 학습', st >= 3], ['일주일 습관', '7일 연속 학습', st >= 7], ['한 달 습관', '30일 연속 학습', st >= 30],
+    ['100번 말하기', '누적 100문장 말하기', said >= 100], ['500번 말하기', '누적 500문장 말하기', said >= 500],
+    ['패턴 10', '패턴 드릴 10개 완료', pats >= 10], ['패턴 마스터', `패턴 드릴 ${PATTERNS.length}개 모두 완료`, pats >= PATTERNS.length],
+    ['대화 5', '대본 대화 5개 완료', dls >= 5], ['대화 마스터', `대본 대화 ${DIALOGS.length}개 모두 완료`, dls >= DIALOGS.length],
+    ['완벽한 발음', '100점 받은 문장 10개', perfect >= 10], ['익힌 문장 100', '7일 간격까지 통과한 문장 100개', mastered >= 100],
+    ['첫 주 완주', '플랜 7일 완료', plan >= 7], ['플랜 완주', '플랜 전체 완료', plan >= PLAN.length]
+  ].map(([t, d, ok]) => ({ t, d, ok }));
+}
+function viewBadges(v) {
+  const bs = badges();
+  head(v, '배지', `${bs.filter(b => b.ok).length} / ${bs.length}개 획득 · 누적 ${totalSaid()}번 말하기 · 최장 연속 ${bestStreak()}일`);
+  const g = el('div', 'badges');
+  bs.forEach(b => g.append(el('div', 'badge' + (b.ok ? ' on' : ''), `<span class="bi">${b.ok ? '★' : '☆'}</span><b>${esc(b.t)}</b><span class="small muted">${esc(b.d)}</span>`)));
+  v.append(g);
+}
+
+/* ===== 발음 교정: 틀린 단어 누르면 천천히 ===== */
+function diffHTML(ws, hit) { return ws.map((w, i) => hit[i] ? `<span class="ok">${esc(w)}</span>` : `<button type="button" class="miss wbtn" data-w="${esc(w)}" title="천천히 듣기">${esc(w)}</button>`).join(' '); }
+document.addEventListener('click', e => { const b = e.target.closest('.wbtn'); if (b) speak(b.dataset.w, { rate: 0.6 }); });
+function missedBtn(ws, hit, full) {
+  const miss = ws.filter((_, i) => !hit[i]); if (!miss.length) return null;
+  return btn('🔁 틀린 단어 천천히 듣기', 'sm', async () => { for (const w of miss) { await speak(w, { rate: 0.6 }); await wait(250); } await wait(300); await speak(full, { rate: 0.75 }); });
+}
+
+/* ===== 공통 연습 카드 =====
+   mode: full(문장 보며 따라) · blank(빈칸 채워) · ko(뜻만 보고) · cue(패턴 신호 보고) */
+function blankOf(t) { let k = 0; return t.split(' ').map(w => { const core = w.replace(/[^A-Za-z']/g, ''); if (core.length > 2 && !STOP.has(core.toLowerCase()) && k++ % 2 === 0) return w.replace(/[A-Za-z']/g, '_'); return w; }).join(' '); }
+function practiceCard(p, s, mode, o = {}) {
+  p.innerHTML = '';
+  if (o.top) p.append(el('div', 'row', o.top));
+  const stage = el('div', 'stage'); let hint = 0;
+  const drawStage = () => {
+    const ko = `<div class="ko"${mode === 'ko' || mode === 'cue' ? ' style="font-size:19px;color:var(--ink);font-weight:600"' : ''}>${esc(s.ko)}</div>`;
+    if (mode === 'full') stage.innerHTML = `<div class="en">${esc(s.en)}</div>${ko}`;
+    else if (mode === 'blank') stage.innerHTML = `<div class="en num" style="letter-spacing:.02em">${esc(hint ? s.en : blankOf(s.en))}</div>${ko}`;
+    else stage.innerHTML = `${o.frame ? `<div class="lbl">${esc(o.frame)}</div>` : ''}${ko}${hint === 1 ? `<div class="en sm num">${esc(hintOf(s.en))}</div>` : hint === 2 ? `<div class="en">${esc(s.en)}</div>` : ''}`;
+    if (s.note && mode === 'full') stage.insertAdjacentHTML('beforeend', `<div class="note">${esc(s.note)}</div>`);
+  };
+  drawStage(); p.append(stage);
+  const ctrl = el('div', 'ctrl');
+  if (mode === 'full' || mode === 'blank') ctrl.append(btn('▶ 듣기<small>보통 속도</small>', 'primary', () => speak(s.en)), btn('🐢 천천히<small>0.65배</small>', '', () => speak(s.en, { rate: 0.65 })), btn(mode === 'blank' ? '👀 전체 보기<small>점수 −10</small>' : '🔤 뜻 숨기기<small>영어만</small>', '', () => { if (mode === 'blank') { hint = 1; drawStage(); } else stage.querySelector('.ko').hidden = !stage.querySelector('.ko').hidden; }));
+  else ctrl.append(btn('💡 힌트<small>첫 글자 −10</small>', '', () => { hint = Math.max(hint, 1); drawStage(); }), btn('👀 정답<small>−30</small>', '', () => { hint = 2; drawStage(); speak(s.en); }), btn('▶ 정답 듣기<small>−30</small>', '', () => { hint = 2; drawStage(); speak(s.en); }));
+  p.append(ctrl);
+  const res = el('div'); res.style.display = 'grid'; res.style.gap = '6px';
+  p.append(speakInput(said => {
+    const r = bestOf([s.en, s.alt], said, similarity);
+    const pen = mode === 'blank' ? (hint ? 10 : 0) : mode === 'full' ? 0 : hint === 1 ? 10 : hint === 2 ? 30 : 0;
+    const sc = Math.max(0, r.score - pen);
+    if (o.grade) grade(s.sid, sc); else { bumpDaily(sc >= 80); persist(); }
+    res.innerHTML = `<div class="row"><span class="score ${scoreClass(sc)}">${sc}</span><b>${scoreWord(sc)}</b>${pen ? `<span class="small muted">힌트 −${pen}</span>` : ''}</div><div class="diff">${diffHTML(r.refWords, r.hit)}</div><div class="heard">들린 말: “${esc(r.said)}”</div>${sc < 80 ? '<p class="small muted">빨간 단어를 누르면 그 단어만 천천히 들려줍니다.</p>' : ''}`;
+    const mb = missedBtn(r.refWords, r.hit, s.en); if (mb) res.append(mb);
+    if (mode !== 'full' && hint < 2) { hint = 2; drawStage(); }
+    if (o.onScore) o.onScore(sc);
+  }));
+  p.append(res);
+  if (o.autoplay) setTimeout(() => speak(s.en), 250);
+}
+function navRow(p, idx, n, onPrev, onNext, lastLabel) {
+  const nav = el('div', 'navrow');
+  const prev = btn('← 이전', '', onPrev); prev.disabled = idx === 0;
+  nav.append(prev, btn(idx < n - 1 ? '다음 →' : lastLabel, 'primary', onNext)); p.append(nav);
+}
+const avg = a => { const x = a.filter(n => n != null); return x.length ? Math.round(x.reduce((s, n) => s + n, 0) / x.length) : 0; };
+
+/* ===== 단계별 레슨 ===== */
+function viewLesson(v, key) {
+  if (!key) key = 'today';
+  const dk = key === 'today' ? 'day' + (dayIndex() + 1) : key, m = /^day(\d+)$/.exec(dk);
+  const isReview = !!(m && planDay(+m[1] - 1).type === 'review');
+  const items = itemsFor(key);
+  head(v, '레슨 · ' + setTitle(key), isReview ? '복습일입니다. 한국어만 보고 영어로 말해 보세요.' : '같은 문장을 3단계로 연습합니다: 보면서 따라 → 빈칸 채워 → 뜻만 보고 혼자. 힌트가 점점 줄어듭니다.');
+  if (!items.length) { v.append(el('p', 'empty', '문장이 없습니다.')); return; }
+  const stages = isReview ? [['ko', '혼자 말하기']] : [['full', '1단계 · 듣고 따라 말하기'], ['blank', '2단계 · 빈칸 채워 말하기'], ['ko', '3단계 · 혼자 말하기']];
+  const q = stages.flatMap(st => items.map(s => ({ s, st }))), scores = [];
+  let idx = 0;
+  const bar = el('div', 'bar'); const barI = el('i'); bar.append(barI); v.append(bar);
+  const p = el('section', 'panel'); v.append(p);
+  const draw = () => {
+    stopSpeak(); barI.style.width = Math.round(idx / q.length * 100) + '%';
+    if (idx >= q.length) return finish();
+    const { s, st } = q[idx];
+    practiceCard(p, s, st[0], { top: `<span class="pill info">${st[1]}</span><span class="small muted num grow">${idx + 1} / ${q.length}</span><span class="small muted">${esc(s.unit.id)}</span>`, grade: st[0] === 'ko', autoplay: st[0] === 'full', onScore: sc => { scores[idx] = sc; } });
+    navRow(p, idx, q.length, () => { idx--; draw(); }, () => { idx++; draw(); window.scrollTo(0, 0); }, '레슨 끝내기');
+  };
+  const finish = () => {
+    logMission('lesson');
+    const last = scores.slice(q.length - items.length);
+    p.innerHTML = `<h3>레슨 완료!</h3><div class="stats"><div><b>${avg(scores)}</b><span>전체 평균</span></div><div><b>${avg(last)}</b><span>혼자 말하기 평균</span></div><div><b>${scores.filter(n => n != null).length}</b><span>말한 횟수</span></div></div><p class="small muted">혼자 말하기 점수가 복습 간격에 반영됩니다. 80점 미만 문장은 내일 다시 나옵니다.</p>`;
+    const d = planDay(Math.max(0, dayIndex())), r = el('div', 'row');
+    r.append(btn('② 패턴 드릴로', 'primary', () => go('pattern-' + d.pat)), btn('③ 대화 연습으로', '', () => go('dialog-' + d.dlg)), btn('다시 하기', '', () => { idx = 0; scores.length = 0; draw(); }));
+    p.append(r);
+  };
+  draw();
+}
+
+/* ===== 패턴 드릴 ===== */
+function viewPatterns(v) {
+  head(v, '패턴 드릴', '자주 쓰는 문장 틀 하나에 단어만 바꿔 여러 번 말하면, 실전에서 문장이 바로 나옵니다.');
+  [['biz', '업무 패턴'], ['life', '일상·여행 패턴']].forEach(([c, name]) => {
+    const p = el('section', 'panel'); p.innerHTML = `<h3>${name}</h3>`; const t = el('div', 'tiles');
+    PATTERNS.filter(x => x.c === c).forEach(x => { const a = el('a', 'tile'); a.href = '#pattern-' + x.id; a.innerHTML = `<b class="en sm" style="font-weight:600">${esc(x.p)}</b><span>${esc(x.ko)}</span>${S.patDone[x.id] != null ? `<span><span class="pill ${scoreClass(S.patDone[x.id])}">${S.patDone[x.id]}점</span></span>` : ''}`; t.append(a); });
+    p.append(t); v.append(p);
+  });
+}
+function viewPattern(v, id) {
+  const pt = PSET[id]; if (!pt) { v.append(el('p', 'empty', '패턴이 없습니다.')); return; }
+  const back = el('a', 'link small', '← 패턴 목록'); back.href = '#patterns'; v.append(back);
+  head(v, '패턴 드릴', '');
+  const intro = el('section', 'panel');
+  intro.innerHTML = `<div class="stage"><div class="en">${esc(pt.p)}</div><div class="ko">${esc(pt.ko)}</div><div class="note">${esc(pt.tip)}</div></div><p class="small muted">① 예문을 듣고 → ② 한국어 신호를 보고 패턴에 넣어 말하세요.</p>`;
+  const items = itemsFor(id);
+  items.forEach(s => { const r = el('div', 'sent'); r.innerHTML = `<div><div class="en sm">${esc(s.en)}</div><div class="ko">${esc(s.ko)}</div></div>`; const a = el('div', 'acts'); a.append(playBtn(s.en)); r.append(a); intro.append(r); });
+  const startRow = el('div', 'row');
+  startRow.append(btn('▶ 예문 모두 듣기', '', async () => { for (const s of items) { if (!(await speak(s.en))) break; await wait(700); } }), btn('드릴 시작', 'primary', () => { intro.remove(); run(); }));
+  intro.append(startRow); v.append(intro);
+  const p = el('section', 'panel'), scores = []; let idx = 0;
+  const run = () => { v.append(p); draw(); };
+  const draw = () => {
+    stopSpeak();
+    if (idx >= items.length) {
+      const a = avg(scores); S.patDone[id] = Math.max(S.patDone[id] || 0, a); persist(); logMission('pat');
+      p.innerHTML = `<h3>패턴 드릴 완료 · 평균 ${a}점</h3><p class="small muted">${esc(pt.p)} 패턴으로 ${items.length}문장을 말했습니다. 이 문장들도 복습에 들어갑니다.</p>`;
+      const d = planDay(Math.max(0, dayIndex())), r = el('div', 'row');
+      r.append(btn('③ 대화 연습으로', 'primary', () => go('dialog-' + d.dlg)), btn('다시 하기', '', () => { idx = 0; scores.length = 0; draw(); }), btn('다른 패턴', '', () => go('patterns')));
+      p.append(r); return;
+    }
+    practiceCard(p, items[idx], 'cue', { frame: pt.p, top: `<span class="pill info num">${idx + 1} / ${items.length}</span><span class="small muted grow">신호를 보고 패턴에 넣어 말하기</span>`, grade: true, onScore: sc => { scores[idx] = sc; } });
+    navRow(p, idx, items.length, () => { idx--; draw(); }, () => { idx++; draw(); }, '드릴 끝내기');
+  };
+}
+
+/* ===== 대본 대화 ===== */
+function viewDialogs(v) {
+  head(v, '대화 연습', '앱이 상대 역할 대사를 읽어 주고, 내 차례에 내가 말합니다. 처음엔 대사를 보며, 익숙해지면 뜻만 보고 도전하세요.');
+  [['biz', '업무 대화'], ['life', '일상·여행 대화']].forEach(([c, name]) => {
+    const p = el('section', 'panel'); p.innerHTML = `<h3>${name}</h3>`; const t = el('div', 'tiles');
+    DIALOGS.filter(x => x.c === c).forEach(x => { const a = el('a', 'tile'); a.href = '#dialog-' + x.id; a.innerHTML = `<b>${esc(x.t)}</b><span>${esc(x.d)} · ${esc(x.who)}</span>${S.dlgDone[x.id] != null ? `<span><span class="pill ${scoreClass(S.dlgDone[x.id])}">${S.dlgDone[x.id]}점</span></span>` : ''}`; t.append(a); });
+    p.append(t); v.append(p);
+  });
+}
+function viewDialog(v, id) {
+  const d = DSET[id]; if (!d) { v.append(el('p', 'empty', '대화가 없습니다.')); return; }
+  const back = el('a', 'link small', '← 대화 목록'); back.href = '#dialogs'; v.append(back);
+  head(v, '대화 · ' + d.t, `${esc(d.d)} · 상대: ${esc(d.who)}. 회색 말풍선은 앱이 읽어 주고, 파란 칸이 내 차례입니다.`);
+  let easy = S.set.dlgEasy !== false, token = 0, i = 0;
+  const scores = {};
+  const top = el('section', 'panel');
+  const seg = el('div', 'seg');
+  const drawSeg = () => { seg.innerHTML = ''; [[true, '대사 보며'], [false, '뜻만 보고 (도전)']].forEach(([k, l]) => { const b = btn(l, '', () => { easy = k; S.set.dlgEasy = k; persist(); drawSeg(); }); b.setAttribute('aria-pressed', easy === k ? 'true' : 'false'); seg.append(b); }); };
+  drawSeg();
+  const startB = btn('▶ 대화 시작', 'primary', () => { start(); });
+  top.append(seg, startB); v.append(top);
+  const chat = el('div', 'dchat'); v.append(chat);
+  const turn = el('section', 'panel me-turn'); turn.hidden = true; v.append(turn);
+  const bubble = (who, en, ko, extra) => { const b = el('div', 'dmsg ' + (who === 'A' ? 'them' : 'me')); b.innerHTML = `<span class="lbl">${who === 'A' ? esc(d.who) : '나'}</span><div class="en sm">${esc(en)}</div><div class="ko small">${esc(ko)}</div>${extra || ''}`; if (who === 'A') { const pb = playBtn(en, '다시 듣기'); pb.classList.add('replay'); b.append(pb); } chat.append(b); b.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); };
+  async function start() {
+    token++; i = 0; chat.innerHTML = ''; turn.hidden = true; startB.textContent = '↺ 처음부터'; for (const k in scores) delete scores[k];
+    step(token);
+  }
+  async function step(my) {
+    while (i < d.l.length) {
+      if (my !== token) return;
+      const [w, en, ko] = d.l[i];
+      if (w === 'A') { bubble('A', en, ko); await speak(en); if (my !== token) return; await wait(350); i++; continue; }
+      return myTurn(my);
+    }
+    finish();
+  }
+  function myTurn(my) {
+    const [, en, ko] = d.l[i], sid = id + '-' + (i + 1), s = SENT[sid];
+    turn.hidden = false; turn.innerHTML = '';
+    let shown = easy;
+    const card = el('div', 'stage');
+    const drawCard = () => { card.innerHTML = `<span class="lbl">내 차례</span><div class="ko" style="font-size:18px;color:var(--ink);font-weight:600">${esc(ko)}</div>${shown ? `<div class="en">${esc(en)}</div>` : `<div class="en sm num">${esc(hintOf(en))}</div>`}`; };
+    drawCard(); turn.append(card);
+    const ctrl = el('div', 'row');
+    ctrl.append(btn('▶ 내 대사 듣기', 'sm', () => speak(en)));
+    if (!easy) ctrl.append(btn('👀 대사 보기', 'sm', () => { shown = true; drawCard(); }));
+    ctrl.append(btn('건너뛰기', 'sm ghost', () => { scores[i] = 0; bubble('B', en, ko, '<span class="pill bad">건너뜀</span>'); i++; turn.hidden = true; step(my); }));
+    turn.append(ctrl);
+    const res = el('div'); res.style.display = 'grid'; res.style.gap = '6px';
+    turn.append(speakInput(said => {
+      const r = bestOf([en], said, similarity), sc = Math.max(0, r.score - (!easy && shown ? 20 : 0));
+      grade(sid, sc); scores[i] = sc;
+      res.innerHTML = `<div class="row"><span class="score ${scoreClass(sc)}">${sc}</span><b>${scoreWord(sc)}</b></div><div class="diff">${diffHTML(r.refWords, r.hit)}</div>`;
+      const mb = missedBtn(r.refWords, r.hit, en); if (mb) res.append(mb);
+      const go2 = btn(sc >= 60 ? '다음 대사 →' : '그래도 넘어가기 →', sc >= 60 ? 'primary' : '', () => { bubble('B', en, ko, `<span class="pill ${scoreClass(sc)}">${sc}점</span>`); i++; turn.hidden = true; step(my); });
+      res.append(go2);
+      if (sc >= 80) setTimeout(() => { if (my === token && turn.contains(go2)) go2.click(); }, 1400);
+    }));
+    turn.append(res);
+    turn.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+  function finish() {
+    const a = avg(Object.values(scores)); S.dlgDone[id] = Math.max(S.dlgDone[id] || 0, a); persist(); logMission('dlg');
+    turn.hidden = false; turn.innerHTML = `<h3>대화 완료 · 평균 ${a}점</h3><p class="small muted">${easy ? '이번엔 “뜻만 보고(도전)”로 다시 해 보세요.' : '훌륭해요! 다른 대화도 도전해 보세요.'}</p>`;
+    const r = el('div', 'row');
+    r.append(btn(easy ? '도전 모드로 다시' : '다시 하기', 'primary', () => { easy = false; S.set.dlgEasy = false; persist(); drawSeg(); start(); }), btn('대화 듣기만', '', () => go('listen-' + id)), btn('다른 대화', '', () => go('dialogs')));
+    turn.append(r);
+  }
+  cleanup = () => { token++; };
+}
+
 /* ===== 복습·오답 ===== */
 function viewReview(v) {
   const due = dueList(), wr = wrongList();
@@ -1243,9 +1798,9 @@ function viewPlan(v) {
     days.forEach(d => {
       const dt = new Date(d.date + 'T00:00:00'), set = 'day' + (d.i + 1);
       const row = el('div', 'pday' + (d.i === ti ? ' today' : '') + (S.planDone[d.i] ? ' done' : ''));
-      row.innerHTML = `<div class="pdate"><b class="num">${dt.getMonth() + 1}/${dt.getDate()}</b><span>${WD[dt.getDay()]} · D${d.i + 1}</span></div><div><div class="ptitle">${d.type === 'review' ? '<span class="pill warn">복습일</span> ' : ''}${esc(dayTitle(d))}</div><div class="pacts"></div></div>`;
+      row.innerHTML = `<div class="pdate"><b class="num">${dt.getMonth() + 1}/${dt.getDate()}</b><span>${WD[dt.getDay()]} · D${d.i + 1}</span></div><div><div class="ptitle">${d.type === 'review' ? '<span class="pill warn">복습일</span> ' : ''}${esc(dayTitle(d))}</div><div class="small muted">패턴 <span class="en" style="font-size:13px">${esc(PSET[d.pat].p)}</span> · 대화 ${esc(DSET[d.dlg].t)}</div><div class="pacts"></div></div>`;
       const acts = row.querySelector('.pacts');
-      acts.append(btn('문장', 'sm', () => go('unit-' + set)), btn('따라 말하기', 'sm', () => go('shadow-' + set)), btn('답하기', 'sm', () => go('answer-' + set)), btn('듣기', 'sm', () => go('listen-' + set)));
+      acts.append(btn('레슨', 'sm', () => go('lesson-' + set)), btn('패턴', 'sm', () => go('pattern-' + d.pat)), btn('대화', 'sm', () => go('dialog-' + d.dlg)), btn('듣기', 'sm', () => go('listen-' + set)), btn('문장', 'sm', () => go('unit-' + set)));
       const ck = el('label', 'pcheck', `<input type="checkbox" ${S.planDone[d.i] ? 'checked' : ''} aria-label="Day ${d.i + 1} 완료">완료`);
       ck.firstChild.onchange = e => { if (e.target.checked) S.planDone[d.i] = today(); else delete S.planDone[d.i]; persist(); row.classList.toggle('done', e.target.checked); };
       row.append(ck); det.append(row);
@@ -1375,7 +1930,7 @@ render();
 /* ===== 자가 점검 (?selftest): 모든 화면을 그려 오류·가로 넘침을 #selftest에 기록 ===== */
 if (/selftest/.test(location.search)) {
   const errs = []; window.addEventListener('error', e => errs.push('window: ' + e.message));
-  const keys = ['home', 'plan', 'units', 'unit-B01', 'unit-L05', 'unit-day1', 'unit-day5', 'shadow-B01', 'shadow-day3', 'answer-L01', 'answer-day5', 'listen-today', 'listen-B10', 'review', 'sounds', 'ai', 'settings', 'install', 'shadow-due', 'answer-wrong'];
+  const keys = ['home', 'plan', 'units', 'unit-B01', 'unit-L05', 'unit-day1', 'unit-day5', 'shadow-B01', 'shadow-day3', 'answer-L01', 'answer-day5', 'listen-today', 'listen-B10', 'review', 'sounds', 'ai', 'settings', 'install', 'shadow-due', 'answer-wrong', 'lesson-today', 'lesson-B01', 'lesson-day5', 'patterns', 'pattern-P01', 'pattern-P24', 'dialogs', 'dialog-D01', 'dialog-D14', 'listen-D03', 'badges'];
   const out = [];
   (async () => {
     for (const k of keys) {
@@ -1388,7 +1943,11 @@ if (/selftest/.test(location.search)) {
     /* 채점 함수 점검 */
     const t1 = similarity("I'm gonna turn my camera off.", 'I am going to turn my camera off'), t2 = keyScore('Could you send me the latest numbers?', 'can you send me latest numbers');
     out.push(`similarity=${t1.score} keyScore=${t2.score} units=${UNITS.length} sentences=${ALLSID.length} plan90=${makePlan(90).length} plan30units=${new Set(makePlan(30).flatMap(d => d.type === 'learn' ? d.units : [])).size}`);
-    const dup = ALLSID.length - new Set(ALLSID.map(s => SENT[s].en)).size; out.push('duplicate-en=' + dup);
+    const dup = UNIT_SIDS.length - new Set(UNIT_SIDS.map(s => SENT[s].en)).size; out.push('duplicate-en=' + dup + ' patterns=' + PATTERNS.length + ' dialogs=' + DIALOGS.length + ' all=' + ALLSID.length + ' blank=' + blankOf("Could you send me the latest numbers?") + ' missingPat=' + PLAN.filter(d => !PSET[d.pat] || !DSET[d.dlg]).length);
+    /* 레슨·패턴·대화 화면에서 채점 흐름이 도는지 (입력칸으로 제출) */
+    for (const k of ['lesson-B02', 'pattern-P02']) { location.hash = k; render(); await wait(40); const sb = document.querySelector('#view button.primary:not([disabled])'); if (k.startsWith('pattern')) { [...document.querySelectorAll('#view button')].find(b => b.textContent === '드릴 시작').click(); await wait(20); } const f = document.querySelector('#view form'); if (f) { f.querySelector('input').value = k.startsWith('lesson') ? "Our company develops software for manufacturers." : "I'd like to introduce myself."; f.requestSubmit(); await wait(20); out.push(k + ' scored=' + ((document.querySelector('#view .score') || {}).textContent || 'none')); } else out.push(k + ' NO FORM'); }
+    { location.hash = 'dialog-D12'; render(); await wait(20); [...document.querySelectorAll('#view button')].find(b => b.textContent.includes('대화 시작')).click(); await wait(9000);
+      const f = document.querySelector('.me-turn form'); if (f) { f.querySelector('input').value = 'Can I get a medium iced latte please'; f.requestSubmit(); await wait(30); out.push('dialog-D12 turn1 scored=' + ((document.querySelector('.me-turn .score') || {}).textContent || 'none') + ' bubbles=' + document.querySelectorAll('.dmsg').length); } else out.push('dialog-D12 NO TURN bubbles=' + document.querySelectorAll('.dmsg').length); }
     location.hash = 'home'; render();
     const pre = el('pre'); pre.id = 'selftest'; pre.textContent = 'ERRORS=' + errs.length + '\n' + errs.join('\n') + '\n' + out.join('\n'); document.body.append(pre);
   })();
