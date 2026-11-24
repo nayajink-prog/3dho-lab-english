@@ -164,6 +164,13 @@ details>summary{cursor:pointer}
 .dmsg.me{justify-self:end;background:var(--accent-soft);border-bottom-right-radius:4px}
 .dmsg .replay{position:absolute;right:8px;top:8px}
 .me-turn{border-color:var(--accent)}
+.season.now{border-color:var(--accent)}
+.goals{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.goals li{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.5}
+.goals .gk{flex:none;width:22px;height:22px;margin-top:1px;border-radius:6px;border:2px solid var(--line);display:grid;place-items:center;font-size:13px;font-weight:700;color:var(--accent-ink)}
+.goals li.ok .gk{background:var(--good);border-color:var(--good)}
+.goals li.ok>.grow{color:var(--good)}
+.goals .link{font-weight:500;font-size:12px}
 @media (max-width:420px){.en{font-size:19px}.stage .en{font-size:21px}.stats b{font-size:22px}}
 </style>
 
@@ -176,7 +183,7 @@ details>summary{cursor:pointer}
     <div class="small muted">기록은 이 기기 브라우저에만 저장됩니다.</div>
     <div class="seg" role="group" aria-label="화면 테마"><button type="button" data-th="system">시스템</button><button type="button" data-th="light">라이트</button><button type="button" data-th="dark">다크</button></div>
     <nav id="tabs">
-      <a href="#home">오늘</a><a href="#plan">학습플랜</a><a href="#units">표현 목록</a><a href="#patterns">패턴 드릴</a><a href="#dialogs">대화 연습</a><a href="#review">복습·오답</a><a href="#listen-today">듣기 모드</a><a href="#sounds">실제 발음 알아듣기</a><a href="#ai">AI 대화</a><a href="#settings">설정·백업</a><a href="#install">홈 화면 추가 · 공유</a>
+      <a href="#home">오늘</a><a href="#seasons">시즌 목표</a><a href="#plan">학습플랜</a><a href="#units">표현 목록</a><a href="#patterns">패턴 드릴</a><a href="#dialogs">대화 연습</a><a href="#review">복습·오답</a><a href="#listen-today">듣기 모드</a><a href="#sounds">실제 발음 알아듣기</a><a href="#ai">AI 대화</a><a href="#settings">설정·백업</a><a href="#install">홈 화면 추가 · 공유</a>
     </nav>
   </div>
   <div class="scrim" id="scrim"></div>
@@ -1144,13 +1151,35 @@ const ORDER = (() => { const b = UNITS.filter(u => u.c === 'biz'), l = UNITS.fil
 
 /* ===== 상태·저장 (localStorage 키는 모두 eng- 접두어) ===== */
 const LS = 'eng-v1';
-function blank() { return { v: 1, updated: 0, start: today(), planLen: 90, items: {}, wrong: {}, planDone: {}, daily: {}, log: {}, patDone: {}, dlgDone: {}, set: { rate: 0.9, voice: '', pause: 1.5, koVoice: true, altPlay: true, reps: 1, target: 'en' } }; }
+function blank() { return { v: 1, updated: 0, start: today(), planLen: 90, items: {}, wrong: {}, planDone: {}, daily: {}, log: {}, patDone: {}, dlgDone: {}, seasons: {}, set: { rate: 0.9, voice: '', pause: 1.5, koVoice: true, altPlay: true, reps: 1, target: 'en' } }; }
 let S = blank();
 try { const raw = localStorage.getItem(LS); if (raw) { const o = JSON.parse(raw); S = Object.assign(blank(), o); S.set = Object.assign(blank().set, o.set || {}); } } catch (e) { }
 function persist() { S.updated = Date.now(); try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e) { } }
 
 /* ===== 학습플랜 ===== */
 const PLAN_OPTS = [30, 60, 90];
+/* 2주 단위 6시즌: 시즌 목표(할 수 있게 되는 것)와 묶인 상황 */
+const SEASONS = [
+  { t: '첫인사와 회의 기초', goals: [['처음 만난 사람에게 정중하게 자기소개하고 회사·직무를 설명한다', ['B01', 'B02', 'B03']], ['회의를 열고 내 의견을 말하고 동의·반대한다', ['B04', 'B05', 'B06']], ['못 알아들었을 때 되묻고 회의를 마무리한다', ['B07', 'B08']], ['공항 체크인, 입국심사, 기내, 호텔 체크인을 혼자 한다', ['L01', 'L02', 'L03', 'L04']]] },
+  { t: '일정·전화·이메일', goals: [['미팅 일정을 잡고 바꾸거나 취소한다', ['B09', 'B10']], ['회사 전화를 받고 걸고 메시지를 남긴다', ['B11', 'B12']], ['화상회의 문제를 말하고 이메일로 요청·첨부를 한다', ['B13', 'B14', 'B15', 'B16']], ['호텔 문제를 말하고 식당 예약·주문·계산을 한다', ['L05', 'L06', 'L07', 'L08']]] },
+  { t: '부탁·감사·보고', goals: [['이메일을 마무리하고 늦은 답장을 사과한다', ['B17', 'B18']], ['부탁·거절·도움 제안을 정중하게 한다', ['B19', 'B20', 'B21']], ['감사와 사과를 제대로 전하고 진행 상황을 보고한다', ['B22', 'B23', 'B24']], ['카페 주문, 길 묻기, 지하철·버스·택시를 이용한다', ['L09', 'L10', 'L11', 'L12']]] },
+  { t: '발표·숫자·협상', goals: [['문제를 보고하고 마감을 조율한다', ['B25', 'B26']], ['숫자·데이터를 말하고 발표를 시작하고 마무리한다', ['B27', 'B28', 'B29']], ['질문에 답하고 가격·조건을 협상한다', ['B30', 'B31', 'B32']], ['쇼핑·환불, 약국, 렌터카 상황을 해결한다', ['L13', 'L14', 'L15', 'L16']]] },
+  { t: '출장·식사·피드백', goals: [['합의 내용을 확인하고 방문객을 맞이한다', ['B33', 'B34']], ['출장을 준비하고 거래처와 식사한다', ['B35', 'B36']], ['피드백을 주고받고, 일을 맡기고 확인한다', ['B37', 'B38', 'B39', 'B40']], ['관광, 사진 부탁, 스몰토크와 리액션을 한다', ['L17', 'L18', 'L19', 'L20']]] },
+  { t: '고객·협업·네트워킹', goals: [['고객 문의와 불만을 처리한다', ['B41', 'B42']], ['함께 일을 나누고 휴가·부재를 알린다', ['B43', 'B44']], ['네트워킹 행사, 메신저, 회의 중 발언을 자연스럽게 한다', ['B45', 'B46', 'B47', 'B48']], ['약속 잡기, 분실·긴급 상황, 전화 예약, 작별 인사를 한다', ['L21', 'L22', 'L23', 'L24']]] }
+];
+const NS = SEASONS.length;
+const seasonUnits = k => ORDER.slice(Math.floor(k * ORDER.length / NS), Math.floor((k + 1) * ORDER.length / NS)).map(u => u.id);
+const seasonPatterns = k => PATTERNS.slice(Math.floor(k * PATTERNS.length / NS), Math.floor((k + 1) * PATTERNS.length / NS));
+function unitScore(id) { const u = UNIT[id]; return Math.round(u.s.reduce((a, _, i) => a + ((S.items[id + '-' + (i + 1)] || {}).best || 0), 0) / u.s.length); }
+function goalDone(units) { return units.every(id => unitScore(id) >= 70); }
+/* 시즌 테스트 20문장: 상황마다 가장 약한 문장 1개(12) + 시즌 패턴마다 2개(8) */
+function seasonTestItems(k) {
+  const best = sid => (S.items[sid] || {}).best || 0;
+  const weakest = sids => sids.slice().sort((a, b) => best(a) - best(b));
+  const fromUnits = seasonUnits(k).map(id => weakest(UNIT[id].s.map((_, i) => id + '-' + (i + 1)))[0]);
+  const fromPats = seasonPatterns(k).flatMap(p => weakest(p.s.map((_, i) => p.id + '-' + (i + 1))).slice(0, 2));
+  return fromUnits.concat(fromPats).map(s => SENT[s]);
+}
 function makePlan(len = S.planLen) {
   const reviewEvery = 5, days = [], learnN = len - Math.floor(len / reviewEvery);
   let li = 0;
@@ -1164,12 +1193,15 @@ function makePlan(len = S.planLen) {
   days.forEach((d, i) => { if (d.type === 'review') { const prev = days.slice(0, i).reverse().find(x => x.type === 'learn') || days.find(x => x.type === 'learn'); d.pat = prev.pat; d.dlg = prev.dlg; } });
   /* 복습일: 직전 4일 동안 배운 상황 */
   days.forEach((d, i) => { if (d.type === 'review') d.units = days.slice(Math.max(0, i - 4), i).flatMap(x => x.type === 'learn' ? x.units : []); });
+  /* 시즌: 기간을 6등분, 시즌 마지막 날은 시즌 테스트 */
+  days.forEach(d => { d.season = Math.floor(d.i * NS / len); });
+  for (let k = 0; k < NS; k++) { const last = days.filter(d => d.season === k).pop(); if (last) { last.type = 'test'; last.units = seasonUnits(k); } }
   return days;
 }
 let PLAN = makePlan();
 function dayIndex() { return daysBetween(S.start, today()); }
 function planDay(i) { return PLAN[Math.max(0, Math.min(PLAN.length - 1, i))]; }
-function dayTitle(d) { return d.units.map(id => UNIT[id].t).join(' · ') || '자유 복습'; }
+function dayTitle(d) { if (d.type === 'test') return `시즌 ${d.season + 1} 테스트 · ${SEASONS[d.season].t}`; return d.units.map(id => UNIT[id].t).join(' · ') || '자유 복습'; }
 
 /* ===== 기록 ===== */
 function bumpDaily(ok) { const d = today(), x = S.daily[d] || (S.daily[d] = { n: 0, ok: 0 }); x.n++; if (ok) x.ok++; }
@@ -1196,6 +1228,7 @@ function itemsFor(key) {
   if (key === 'today') key = 'day' + (dayIndex() + 1);
   const m = /^day(\d+)$/.exec(key);
   if (m) { const d = planDay(+m[1] - 1); return d.units.flatMap(id => itemsFor(id)); }
+  const t = /^test(\d)$/.exec(key); if (t && SEASONS[+t[1] - 1]) return seasonTestItems(+t[1] - 1);
   if (key === 'due') return dueList().map(s => SENT[s]);
   if (key === 'wrong') return wrongList().map(s => SENT[s]);
   return [];
@@ -1204,6 +1237,7 @@ function setTitle(key) {
   if (UNIT[key]) return `${key} ${UNIT[key].t}`;
   if (PSET[key]) return `패턴 ${PSET[key].p}`;
   if (DSET[key]) return `대화 ${DSET[key].t}`;
+  const t = /^test(\d)$/.exec(key); if (t) return `시즌 ${t[1]} 테스트 문장`;
   if (key === 'today') return `오늘 (Day ${dayIndex() + 1})`;
   const m = /^day(\d+)$/.exec(key); if (m) return `Day ${m[1]}`;
   return { due: '오늘 복습', wrong: '오답 복습' }[key] || key;
@@ -1297,7 +1331,7 @@ function scoreClass(n) { return n >= 80 ? 'good' : n >= 60 ? 'warn' : 'bad'; }
 function scoreWord(n) { return n >= 90 ? '완벽해요' : n >= 80 ? '좋아요' : n >= 60 ? '거의 됐어요' : '다시 해 봐요'; }
 
 /* ===== 라우팅 ===== */
-const ROUTES = { home: viewHome, plan: viewPlan, units: viewUnits, unit: viewUnit, shadow: viewShadow, answer: viewAnswer, listen: viewListen, review: viewReview, sounds: viewSounds, ai: viewAI, settings: viewSettings, install: viewInstall, lesson: viewLesson, patterns: viewPatterns, pattern: viewPattern, dialogs: viewDialogs, dialog: viewDialog, badges: viewBadges };
+const ROUTES = { home: viewHome, plan: viewPlan, units: viewUnits, unit: viewUnit, shadow: viewShadow, answer: viewAnswer, listen: viewListen, review: viewReview, sounds: viewSounds, ai: viewAI, settings: viewSettings, install: viewInstall, lesson: viewLesson, patterns: viewPatterns, pattern: viewPattern, dialogs: viewDialogs, dialog: viewDialog, badges: viewBadges, seasons: viewSeasons, stest: viewSeasonTest };
 function go(h) { if (location.hash !== '#' + h) location.hash = h; else render(); }
 function parseHash() { const h = (location.hash || '#home').slice(1); const i = h.indexOf('-'); return i < 0 ? [h, ''] : [h.slice(0, i), h.slice(i + 1)]; }
 let cleanup = null;
@@ -1305,7 +1339,7 @@ function render() {
   if (cleanup) { try { cleanup(); } catch (e) { } cleanup = null; }
   stopSpeak(); if (activeRec) { try { activeRec.abort(); } catch (e) { } }
   const [r0, arg] = parseHash(); const r = ROUTES[r0] ? r0 : 'home';
-  const navKey = r === 'listen' ? '#listen-today' : r === 'unit' || r === 'shadow' || r === 'answer' ? '#units' : r === 'pattern' ? '#patterns' : r === 'dialog' ? '#dialogs' : r === 'lesson' || r === 'badges' ? '#home' : '#' + r;
+  const navKey = r === 'listen' ? '#listen-today' : r === 'unit' || r === 'shadow' || r === 'answer' ? '#units' : r === 'pattern' ? '#patterns' : r === 'dialog' ? '#dialogs' : r === 'lesson' || r === 'badges' ? '#home' : r === 'stest' ? '#seasons' : '#' + r;
   document.querySelectorAll('#tabs a').forEach(a => { if (a.getAttribute('href') === navKey) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
   const di = dayIndex(); $('#dayBadge').textContent = di < 0 ? `D-${-di}` : di < PLAN.length ? `Day ${di + 1}/${PLAN.length}` : '플랜 완료';
   menu(false);
@@ -1323,15 +1357,16 @@ function viewHome(v) {
   const st = el('section', 'panel');
   st.innerHTML = `<div class="stats"><div><b>${streak()}</b><span>연속 학습일</span></div><div><b>${td.n}</b><span>오늘 말한 문장</span></div><div><b>${Object.values(S.items).filter(x => x.b >= 3).length}</b><span>익힌 문장 / ${ALLSID.length}</span></div></div>`;
   v.append(st);
+  v.append(seasonCard(di < 0 ? 0 : d.season, true));
   const p = el('section', 'panel');
   if (di < 0) p.innerHTML = `<h3>플랜은 ${esc(S.start)}에 시작합니다</h3><p class="small muted">먼저 아래 표현 목록에서 둘러보거나, 학습플랜에서 시작일을 오늘로 바꾸세요.</p>`;
   else {
     const set = 'day' + (d.i + 1), done = S.planDone[d.i];
     const lg = S.log[today()] || {}, ms = [lg.lesson, lg.pat, lg.dlg], nDone = ms.filter(Boolean).length;
-    p.innerHTML = `<div class="row"><span class="pill ${d.type === 'review' ? 'warn' : 'info'}">Day ${d.i + 1} · ${d.type === 'review' ? '복습일' : '새 표현'}</span>${done ? '<span class="pill good">완료</span>' : ''}${di >= PLAN.length ? '<span class="pill good">플랜 끝 · 마지막 날 반복</span>' : ''}<span class="small muted" style="margin-left:auto">오늘의 미션 <b class="num">${nDone}/3</b></span></div>
+    p.innerHTML = `<div class="row"><span class="pill ${d.type === 'review' ? 'warn' : d.type === 'test' ? 'bad' : 'info'}">Day ${d.i + 1} · ${d.type === 'review' ? '복습일' : d.type === 'test' ? '시즌 테스트일' : '새 표현'}</span>${done ? '<span class="pill good">완료</span>' : ''}${di >= PLAN.length ? '<span class="pill good">플랜 끝 · 마지막 날 반복</span>' : ''}<span class="small muted" style="margin-left:auto">오늘의 미션 <b class="num">${nDone}/3</b></span></div>
     <h3>${esc(dayTitle(d))}</h3><div class="bar"><i style="width:${Math.round(nDone / 3 * 100)}%"></i></div>`;
     const pt = PSET[d.pat], dl = DSET[d.dlg];
-    [[lg.lesson, '① 오늘 레슨', d.type === 'review' ? '복습일: 혼자 말하기로 점검' : '듣고 따라 → 빈칸 → 혼자 말하기 3단계', 'lesson-' + set, '약 15분'],
+    [(d.type === 'test' ? [lg.lesson, '① 시즌 테스트', `시즌 ${d.season + 1} 핵심 20문장 혼자 말하기 · 평균 80점 통과`, 'stest-' + (d.season + 1), '약 15분'] : [lg.lesson, '① 오늘 레슨', d.type === 'review' ? '복습일: 혼자 말하기로 점검' : '듣고 따라 → 빈칸 → 혼자 말하기 3단계', 'lesson-' + set, '약 15분']),
      [lg.pat, '② 패턴 드릴', pt.p + ' · ' + pt.ko, 'pattern-' + pt.id, '약 5분'],
      [lg.dlg, '③ 대화 연습', dl.t + ' · ' + dl.who + '와 대화', 'dialog-' + dl.id, '약 5분']].forEach(([ok, t, s, h, min]) => {
       const a = el('a', 'mission' + (ok ? ' done' : '')); a.href = '#' + h;
@@ -1563,7 +1598,9 @@ function badges() {
     ['패턴 10', '패턴 드릴 10개 완료', pats >= 10], ['패턴 마스터', `패턴 드릴 ${PATTERNS.length}개 모두 완료`, pats >= PATTERNS.length],
     ['대화 5', '대본 대화 5개 완료', dls >= 5], ['대화 마스터', `대본 대화 ${DIALOGS.length}개 모두 완료`, dls >= DIALOGS.length],
     ['완벽한 발음', '100점 받은 문장 10개', perfect >= 10], ['익힌 문장 100', '7일 간격까지 통과한 문장 100개', mastered >= 100],
-    ['첫 주 완주', '플랜 7일 완료', plan >= 7], ['플랜 완주', '플랜 전체 완료', plan >= PLAN.length]
+    ['첫 주 완주', '플랜 7일 완료', plan >= 7], ['플랜 완주', '플랜 전체 완료', plan >= PLAN.length],
+    ...SEASONS.map((se, k) => [`시즌 ${k + 1} 통과`, se.t + ' · 시즌 테스트 80점', !!(S.seasons[k] || {}).pass]),
+    ['전 시즌 통과', `시즌 ${NS}개 모두 통과`, SEASONS.every((_, k) => (S.seasons[k] || {}).pass)]
   ].map(([t, d, ok]) => ({ t, d, ok }));
 }
 function viewBadges(v) {
@@ -1622,11 +1659,72 @@ function navRow(p, idx, n, onPrev, onNext, lastLabel) {
 }
 const avg = a => { const x = a.filter(n => n != null); return x.length ? Math.round(x.reduce((s, n) => s + n, 0) / x.length) : 0; };
 
+/* ===== 시즌 목표 ===== */
+function seasonDays(k) { return PLAN.filter(d => d.season === k); }
+function seasonCard(k, compact) {
+  const se = SEASONS[k], days = seasonDays(k), first = days[0], last = days[days.length - 1], ti = dayIndex();
+  const rec = S.seasons[k] || {}, state = rec.pass ? 'pass' : ti > last.i ? 'past' : ti >= first.i ? 'now' : 'next';
+  const goalsDone = se.goals.filter(g => goalDone(g[1])).length;
+  const c = el('section', 'panel season' + (state === 'now' ? ' now' : ''));
+  const md = s => s.slice(5).replace('-', '/');
+  const pill = { pass: '<span class="pill good">통과 ★</span>', past: '<span class="pill warn">테스트 미통과</span>', now: `<span class="pill info">진행 중 · 테스트까지 ${Math.max(0, last.i - ti)}일</span>`, next: '<span class="pill">예정</span>' }[state];
+  const dayPct = state === 'now' ? Math.round((ti - first.i + 1) / days.length * 100) : state === 'next' ? 0 : 100;
+  c.innerHTML = `<div class="row"><span class="lbl">시즌 ${k + 1} / ${NS}</span>${pill}<span class="small muted num" style="margin-left:auto">${md(first.date)}~${md(last.date)} · ${days.length}일</span></div>
+  <h3>${esc(se.t)}</h3>
+  <div class="row small"><span class="muted" style="width:58px">기간</span><div class="bar grow"><i style="width:${dayPct}%"></i></div><span class="num muted">${dayPct}%</span></div>
+  <div class="row small"><span class="muted" style="width:58px">목표</span><div class="bar grow"><i style="width:${Math.round(goalsDone / se.goals.length * 100)}%;background:var(--good)"></i></div><span class="num muted">${goalsDone}/${se.goals.length}</span></div>`;
+  if (!compact || state === 'now') {
+    const ul = el('ul', 'goals');
+    se.goals.forEach(([g, units]) => { const ok = goalDone(units), pct = Math.round(units.reduce((a, id) => a + unitScore(id), 0) / units.length); const li = el('li', ok ? 'ok' : '', `<span class="gk">${ok ? '✓' : ''}</span><span class="grow">${esc(g)}<span class="small muted"> · ${units.map(id => `<a class="link" href="#unit-${id}">${id}</a>`).join(' ')}</span></span><span class="num small muted">${pct}점</span>`); ul.append(li); });
+    c.append(ul);
+    c.append(el('p', 'small muted', '목표는 묶인 상황의 문장 점수(최고점 평균)가 70점 이상이면 체크됩니다.'));
+  }
+  const r = el('div', 'row');
+  r.append(btn(rec.pass ? `테스트 다시 (최고 ${rec.best}점)` : rec.best != null ? `시즌 테스트 재도전 (최고 ${rec.best}점)` : '시즌 테스트', state === 'now' && last.i - ti <= 0 || state === 'past' ? 'primary' : '', () => go('stest-' + (k + 1))));
+  if (compact) r.append(btn('전체 시즌 보기', 'ghost', () => go('seasons')));
+  c.append(r);
+  return c;
+}
+function viewSeasons(v) {
+  head(v, '시즌 목표', `학습 기간을 ${NS}시즌으로 나눴습니다(지금 ${S.planLen}일 플랜 → 시즌당 약 ${Math.round(S.planLen / NS)}일). 시즌마다 할 수 있게 될 목표가 있고, 마지막 날 시즌 테스트(20문장, 평균 80점)를 통과하면 배지를 받습니다.`);
+  const passN = SEASONS.filter((_, k) => (S.seasons[k] || {}).pass).length;
+  v.append(el('div', 'row', `<span class="small">시즌 통과</span><div class="bar grow"><i style="width:${Math.round(passN / NS * 100)}%"></i></div><span class="num small">${passN}/${NS}</span>`));
+  SEASONS.forEach((_, k) => v.append(seasonCard(k, false)));
+}
+function viewSeasonTest(v, arg) {
+  const k = (+arg || 1) - 1, se = SEASONS[k];
+  if (!se) { v.append(el('p', 'empty', '시즌이 없습니다.')); return; }
+  const back = el('a', 'link small', '← 시즌 목표'); back.href = '#seasons'; v.append(back);
+  const items = seasonTestItems(k), rec = S.seasons[k] || {};
+  head(v, `시즌 ${k + 1} 테스트 · ${se.t}`, `한국어만 보고 영어로 말하세요. ${items.length}문장 평균 80점 이상이면 통과입니다. 힌트를 보면 감점되고, 건너뛴 문장은 0점입니다. 약한 문장 위주로 나옵니다.${rec.best != null ? ` 지금까지 최고 ${rec.best}점.` : ''}`);
+  const bar = el('div', 'bar'); const barI = el('i'); bar.append(barI); v.append(bar);
+  const p = el('section', 'panel'); v.append(p);
+  const scores = new Array(items.length).fill(null); let idx = 0;
+  const draw = () => {
+    stopSpeak(); barI.style.width = Math.round(idx / items.length * 100) + '%';
+    if (idx >= items.length) return finish();
+    practiceCard(p, items[idx], 'ko', { top: `<span class="pill bad">시즌 ${k + 1} 테스트</span><span class="small muted num grow">${idx + 1} / ${items.length}</span><span class="small muted">${esc(items[idx].unit.id)}</span>`, grade: true, onScore: sc => { scores[idx] = sc; } });
+    navRow(p, idx, items.length, () => { idx--; draw(); }, () => { idx++; draw(); window.scrollTo(0, 0); }, '테스트 끝내기');
+  };
+  const finish = () => {
+    const a = Math.round(scores.reduce((s, n) => s + (n || 0), 0) / items.length), pass = a >= 80, prev = S.seasons[k] || {};
+    S.seasons[k] = { best: Math.max(prev.best || 0, a), last: a, date: today(), pass: !!prev.pass || pass };
+    logMission('lesson');
+    p.innerHTML = `<h3>${pass ? `시즌 ${k + 1} 통과! ★ 배지 획득` : `시즌 ${k + 1} 테스트 ${a}점 · 80점까지 ${80 - a}점`}</h3><div class="stats"><div><b>${a}</b><span>이번 평균</span></div><div><b>${scores.filter(n => n != null && n >= 80).length}</b><span>80점 이상 문장</span></div><div><b>${scores.filter(n => n == null).length}</b><span>건너뛴 문장</span></div></div><p class="small muted">${pass ? '다음 시즌도 이 페이스로 가세요. 60점 미만 문장은 오답 복습함에 들어갔습니다.' : '60점 미만 문장은 오답 복습함에 들어갔습니다. 복습한 뒤 다시 도전하면 약한 문장 위주로 새로 나옵니다.'}</p>`;
+    const r = el('div', 'row');
+    if (!pass) r.append(btn('오답 복습하기', 'primary', () => go('answer-wrong')));
+    r.append(btn('다시 도전', '', () => go('stest-' + (k + 1))), btn('시즌 목표 보기', pass ? 'primary' : '', () => go('seasons')));
+    p.append(r);
+  };
+  draw();
+}
+
 /* ===== 단계별 레슨 ===== */
 function viewLesson(v, key) {
   if (!key) key = 'today';
   const dk = key === 'today' ? 'day' + (dayIndex() + 1) : key, m = /^day(\d+)$/.exec(dk);
   const isReview = !!(m && planDay(+m[1] - 1).type === 'review');
+  if (m && planDay(+m[1] - 1).type === 'test') return viewSeasonTest(v, String(planDay(+m[1] - 1).season + 1));
   const items = itemsFor(key);
   head(v, '레슨 · ' + setTitle(key), isReview ? '복습일입니다. 한국어만 보고 영어로 말해 보세요.' : '같은 문장을 3단계로 연습합니다: 보면서 따라 → 빈칸 채워 → 뜻만 보고 혼자. 힌트가 점점 줄어듭니다.');
   if (!items.length) { v.append(el('p', 'empty', '문장이 없습니다.')); return; }
@@ -1780,7 +1878,7 @@ function viewReview(v) {
 
 /* ===== 학습플랜 ===== */
 function viewPlan(v) {
-  head(v, '학습플랜', '5일마다 하루는 복습일입니다. 날짜를 누르면 그날 학습으로 바로 갑니다.');
+  head(v, '학습플랜', `${NS}시즌으로 나뉩니다. 5일마다 하루는 복습일, 시즌 마지막 날은 시즌 테스트입니다. 날짜를 누르면 그날 학습으로 바로 갑니다.`);
   const p = el('section', 'panel');
   const seg = el('div', 'seg'); PLAN_OPTS.forEach(n => { const b = btn(n + '일', '', () => { S.planLen = n; PLAN = makePlan(); persist(); render(); }); b.setAttribute('aria-pressed', S.planLen === n ? 'true' : 'false'); seg.append(b); });
   const per = { 30: '하루 3개 상황(18문장) · 집중', 60: '하루 1~2개 상황(6~12문장)', 90: '하루 1개 상황(6문장) + 복습 · 권장' }[S.planLen];
@@ -1790,16 +1888,17 @@ function viewPlan(v) {
   p.append(seg, el('p', 'small muted', per), sr, el('div', 'row', `<span class="small">진행</span><div class="bar grow"><i style="width:${Math.round(doneN / PLAN.length * 100)}%"></i></div><span class="num small">${doneN}/${PLAN.length}일</span>`));
   v.append(p);
   const list = el('section', 'panel'); const ti = dayIndex();
-  for (let w = 0; w < Math.ceil(PLAN.length / 7); w++) {
-    const days = PLAN.slice(w * 7, w * 7 + 7);
-    const det = el('details', 'pweek'); if (ti >= w * 7 && ti < w * 7 + 7 || (ti < 0 && w === 0)) det.open = true;
+  for (let w = 0; w < NS; w++) {
+    const days = seasonDays(w);
+    const det = el('details', 'pweek'); if (ti >= days[0].i && ti <= days[days.length - 1].i || (ti < 0 && w === 0) || (ti >= PLAN.length && w === NS - 1)) det.open = true;
     const wd = days.filter(d => S.planDone[d.i]).length;
-    det.innerHTML = `<summary>${w + 1}주차 <span class="small muted">${days[0].date.slice(5).replace('-', '/')}~${days[days.length - 1].date.slice(5).replace('-', '/')}</span><span class="pill ${wd === days.length ? 'good' : 'info'}" style="margin-left:auto">${wd}/${days.length}</span></summary>`;
+    det.innerHTML = `<summary><span>시즌 ${w + 1} <span class="small muted">${esc(SEASONS[w].t)} · ${days[0].date.slice(5).replace('-', '/')}~${days[days.length - 1].date.slice(5).replace('-', '/')}</span></span><span class="pill ${(S.seasons[w] || {}).pass ? 'good' : 'info'}" style="margin-left:auto">${(S.seasons[w] || {}).pass ? '★ ' : ''}${wd}/${days.length}</span></summary>`;
     days.forEach(d => {
       const dt = new Date(d.date + 'T00:00:00'), set = 'day' + (d.i + 1);
       const row = el('div', 'pday' + (d.i === ti ? ' today' : '') + (S.planDone[d.i] ? ' done' : ''));
-      row.innerHTML = `<div class="pdate"><b class="num">${dt.getMonth() + 1}/${dt.getDate()}</b><span>${WD[dt.getDay()]} · D${d.i + 1}</span></div><div><div class="ptitle">${d.type === 'review' ? '<span class="pill warn">복습일</span> ' : ''}${esc(dayTitle(d))}</div><div class="small muted">패턴 <span class="en" style="font-size:13px">${esc(PSET[d.pat].p)}</span> · 대화 ${esc(DSET[d.dlg].t)}</div><div class="pacts"></div></div>`;
+      row.innerHTML = `<div class="pdate"><b class="num">${dt.getMonth() + 1}/${dt.getDate()}</b><span>${WD[dt.getDay()]} · D${d.i + 1}</span></div><div><div class="ptitle">${d.type === 'review' ? '<span class="pill warn">복습일</span> ' : d.type === 'test' ? '<span class="pill bad">시즌 테스트</span> ' : ''}${esc(dayTitle(d))}</div><div class="small muted">패턴 <span class="en" style="font-size:13px">${esc(PSET[d.pat].p)}</span> · 대화 ${esc(DSET[d.dlg].t)}</div><div class="pacts"></div></div>`;
       const acts = row.querySelector('.pacts');
+      if (d.type === 'test') acts.append(btn('시즌 테스트', 'sm primary', () => go('stest-' + (d.season + 1))));
       acts.append(btn('레슨', 'sm', () => go('lesson-' + set)), btn('패턴', 'sm', () => go('pattern-' + d.pat)), btn('대화', 'sm', () => go('dialog-' + d.dlg)), btn('듣기', 'sm', () => go('listen-' + set)), btn('문장', 'sm', () => go('unit-' + set)));
       const ck = el('label', 'pcheck', `<input type="checkbox" ${S.planDone[d.i] ? 'checked' : ''} aria-label="Day ${d.i + 1} 완료">완료`);
       ck.firstChild.onchange = e => { if (e.target.checked) S.planDone[d.i] = today(); else delete S.planDone[d.i]; persist(); row.classList.toggle('done', e.target.checked); };
@@ -1930,7 +2029,7 @@ render();
 /* ===== 자가 점검 (?selftest): 모든 화면을 그려 오류·가로 넘침을 #selftest에 기록 ===== */
 if (/selftest/.test(location.search)) {
   const errs = []; window.addEventListener('error', e => errs.push('window: ' + e.message));
-  const keys = ['home', 'plan', 'units', 'unit-B01', 'unit-L05', 'unit-day1', 'unit-day5', 'shadow-B01', 'shadow-day3', 'answer-L01', 'answer-day5', 'listen-today', 'listen-B10', 'review', 'sounds', 'ai', 'settings', 'install', 'shadow-due', 'answer-wrong', 'lesson-today', 'lesson-B01', 'lesson-day5', 'patterns', 'pattern-P01', 'pattern-P24', 'dialogs', 'dialog-D01', 'dialog-D14', 'listen-D03', 'badges'];
+  const keys = ['home', 'plan', 'units', 'unit-B01', 'unit-L05', 'unit-day1', 'unit-day5', 'shadow-B01', 'shadow-day3', 'answer-L01', 'answer-day5', 'listen-today', 'listen-B10', 'review', 'sounds', 'ai', 'settings', 'install', 'shadow-due', 'answer-wrong', 'lesson-today', 'lesson-B01', 'lesson-day5', 'patterns', 'pattern-P01', 'pattern-P24', 'dialogs', 'dialog-D01', 'dialog-D14', 'listen-D03', 'badges', 'seasons', 'stest-1', 'stest-6', 'lesson-day15', 'unit-day15', 'listen-day30'];
   const out = [];
   (async () => {
     for (const k of keys) {
@@ -1944,6 +2043,8 @@ if (/selftest/.test(location.search)) {
     const t1 = similarity("I'm gonna turn my camera off.", 'I am going to turn my camera off'), t2 = keyScore('Could you send me the latest numbers?', 'can you send me latest numbers');
     out.push(`similarity=${t1.score} keyScore=${t2.score} units=${UNITS.length} sentences=${ALLSID.length} plan90=${makePlan(90).length} plan30units=${new Set(makePlan(30).flatMap(d => d.type === 'learn' ? d.units : [])).size}`);
     const dup = UNIT_SIDS.length - new Set(UNIT_SIDS.map(s => SENT[s].en)).size; out.push('duplicate-en=' + dup + ' patterns=' + PATTERNS.length + ' dialogs=' + DIALOGS.length + ' all=' + ALLSID.length + ' blank=' + blankOf("Could you send me the latest numbers?") + ' missingPat=' + PLAN.filter(d => !PSET[d.pat] || !DSET[d.dlg]).length);
+    /* 시즌: 목표 상황이 시즌 상황과 일치하는지, 플랜 길이별 테스트일 */
+    out.push('seasonGoalMismatch=' + SEASONS.map((se, k) => { const a = se.goals.flatMap(g => g[1]).sort().join(), b = seasonUnits(k).slice().sort().join(); return a === b ? '' : 'S' + (k + 1); }).join('') + ' testItems=' + SEASONS.map((_, k) => seasonTestItems(k).filter(Boolean).length).join('/') + ' testDays=' + [30, 60, 90].map(n => makePlan(n).filter(d => d.type === 'test').map(d => d.i + 1).join('.')).join(' | ') + ' unitsLearnedBeforeTest=' + [30, 60, 90].map(n => { const P = makePlan(n); return SEASONS.map((_, k) => new Set(P.filter(d => d.season === k && d.type === 'learn').flatMap(d => d.units)).size).join('.'); }).join(' | '));
     /* 레슨·패턴·대화 화면에서 채점 흐름이 도는지 (입력칸으로 제출) */
     for (const k of ['lesson-B02', 'pattern-P02']) { location.hash = k; render(); await wait(40); const sb = document.querySelector('#view button.primary:not([disabled])'); if (k.startsWith('pattern')) { [...document.querySelectorAll('#view button')].find(b => b.textContent === '드릴 시작').click(); await wait(20); } const f = document.querySelector('#view form'); if (f) { f.querySelector('input').value = k.startsWith('lesson') ? "Our company develops software for manufacturers." : "I'd like to introduce myself."; f.requestSubmit(); await wait(20); out.push(k + ' scored=' + ((document.querySelector('#view .score') || {}).textContent || 'none')); } else out.push(k + ' NO FORM'); }
     { location.hash = 'dialog-D12'; render(); await wait(20); [...document.querySelectorAll('#view button')].find(b => b.textContent.includes('대화 시작')).click(); await wait(9000);
